@@ -1,0 +1,17 @@
+<!--
+  ~ Copyright (c) 2015-2016 BiliBili Inc.
+  -->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.bilibili.xbus">
+
+    <application>
+        <service
+            android:name="com.bilibili.xbus.XBusService"
+            android:exported="false">
+
+        </service>
+
+    </application>
+
+</manifest>
