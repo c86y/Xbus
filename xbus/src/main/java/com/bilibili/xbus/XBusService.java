@@ -6,6 +6,7 @@ package com.bilibili.xbus;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Debug;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
@@ -22,6 +23,7 @@ public class XBusService extends Service{
     @Override
     public void onCreate() {
         super.onCreate();
+        Debug.waitForDebugger();
         mXBusDaemon = new XBusDaemon(this);
         mXBusDaemon.start();
     }

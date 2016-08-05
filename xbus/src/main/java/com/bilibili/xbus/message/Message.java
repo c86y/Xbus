@@ -23,13 +23,14 @@ public class Message implements Serializable{
     public interface HeaderField {
         public static final byte SOURCE = 1;
         public static final byte DEST = 2;
+        public static final byte OBJECT = 3;
     }
 
     private byte type;
     private Map<Byte, Object> header;
-    private Map<String, Object> args;
+    private Object[] args;
 
-    public Message(byte type, Map<Byte, Object> headers, Map<String, Object> args) {
+    public Message(byte type, Map<Byte, Object> headers, Object... args) {
         this.type = type;
         this.header = headers;
         this.args = args;
@@ -51,8 +52,12 @@ public class Message implements Serializable{
         return (String)header.get(HeaderField.DEST);
     }
 
-    public Object getArg(String key) {
-        return args.get(key);
+    public void setArgs(Object[] args) {
+        this.args = args;
+    }
+
+    public Object getArgs() {
+        return args;
     }
 
 }

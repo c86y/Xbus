@@ -77,10 +77,17 @@ public class XBusDaemon extends Thread {
 
 
     @Override
+    public synchronized void start() {
+        mIsRunning.set(true);
+        super.start();
+    }
+
+    @Override
     public void run() {
+        LocalServerSocket lss = null;
         try {
+            lss = new LocalServerSocket(mContext.getPackageName() + SOCKET_NAME);
             while (mIsRunning.get()) {
-                LocalServerSocket lss = new LocalServerSocket(mContext.getPackageName() + SOCKET_NAME);
                 LocalSocket ls = lss.accept();
                 if (mXBusAuth.auth(ls)) {
                     mRouter.add(ls);
@@ -90,6 +97,12 @@ public class XBusDaemon extends Thread {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                lss.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

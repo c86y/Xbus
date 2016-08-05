@@ -7,6 +7,7 @@ package com.bilibili.xbus;
 import android.content.Context;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.os.Process;
 
 import com.bilibili.xbus.message.Message;
 
@@ -21,6 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class XBus implements Runnable{
 
+    private static final int DEFAULT_SO_TIMEOUT = 3000;
+
     public interface CallbackHandler {
 
         void handle(Message msg);
@@ -29,17 +32,31 @@ public class XBus implements Runnable{
     private MessageReader min;
     private MessageWriter mout;
     private AtomicBoolean runing = new AtomicBoolean(false);
+    private Context mContext;
+    private String mName;
 
     private CallbackHandler mCallbackHandler;
 
-    public void connect(Context context, CallbackHandler handler) throws XBusExeception {
+    public XBus(Context context) {
+        mContext = context.getApplicationContext();
+        mName = mContext.getPackageName() + "#" + Process.myUid() + "#" + Process.myPid();
+    }
+
+    public String getName() {
+        return mName;
+    }
+
+    public void connect(CallbackHandler handler) throws XBusException {
+        mCallbackHandler = handler;
+
         LocalSocket socket = new LocalSocket();
-        LocalSocketAddress address = new LocalSocketAddress(context.getPackageName() + XBusDaemon.SOCKET_NAME);
+        LocalSocketAddress address = new LocalSocketAddress(mContext.getPackageName() + XBusDaemon.SOCKET_NAME);
         try {
+            socket.setSoTimeout(DEFAULT_SO_TIMEOUT);
             socket.connect(address);
             if (!new MyXBusAuth().auth(socket)) {
                 socket.close();
-                throw new XBusExeception("Failed to auth");
+                throw new XBusException("Failed to auth");
             }
 
             min = new MessageReader(socket.getInputStream());

@@ -7,24 +7,24 @@ package com.bilibili.xbus;
 import java.io.IOException;
 
 /**
- * XBusExeception
+ * XBusException
  *
  * @author chengyuan
  * @data 16/8/5.
  */
-public class XBusExeception extends IOException {
-    public XBusExeception() {
+public class XBusException extends IOException {
+    public XBusException() {
     }
 
-    public XBusExeception(String detailMessage) {
+    public XBusException(String detailMessage) {
         super(detailMessage);
     }
 
-    public XBusExeception(String message, Throwable cause) {
+    public XBusException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public XBusExeception(Throwable cause) {
+    public XBusException(Throwable cause) {
         super(cause);
     }
 }

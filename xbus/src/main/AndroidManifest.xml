@@ -8,6 +8,7 @@
     <application>
         <service
             android:name="com.bilibili.xbus.XBusService"
+            android:process=":Xbus"
             android:exported="false">
 
         </service>
