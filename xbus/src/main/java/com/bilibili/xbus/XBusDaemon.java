@@ -36,32 +36,6 @@ public class XBusDaemon extends Thread {
 
     private Context mContext;
     private XBusRouter mRouter = new XBusRouter();
-    private Marshalling mMarshalling = new Marshalling() {
-        @Override
-        public void marshalling(Message msg, OutputStream out) {
-            try {
-                ObjectOutputStream oos = new ObjectOutputStream(out);
-                oos.writeObject(msg);
-                oos.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public Message deMarshalling(InputStream in) {
-            Message msg = null;
-            try {
-                ObjectInputStream ois = new ObjectInputStream(in);
-                msg = (Message) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return msg;
-        }
-    };
 
     private XBusAuth mXBusAuth = new MyXBusAuth();
 
@@ -87,8 +61,17 @@ public class XBusDaemon extends Thread {
         LocalServerSocket lss = null;
         try {
             lss = new LocalServerSocket(mContext.getPackageName() + SOCKET_NAME);
+            if (XBusLog.DEBUG) {
+                XBusLog.d("XBus daemon is running");
+            }
+
             while (mIsRunning.get()) {
                 LocalSocket ls = lss.accept();
+
+                if (XBusLog.DEBUG) {
+                    XBusLog.d("accept socket: " + ls);
+                }
+
                 if (mXBusAuth.auth(ls)) {
                     mRouter.add(ls);
                 } else {
@@ -99,7 +82,10 @@ public class XBusDaemon extends Thread {
             e.printStackTrace();
         } finally {
             try {
-                lss.close();
+                if (lss != null) {
+                    lss.close();
+
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

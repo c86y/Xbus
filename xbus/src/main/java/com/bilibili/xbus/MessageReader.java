@@ -26,7 +26,7 @@ public class MessageReader implements Closeable {
     }
 
     public Message read() {
-        Message msg = null;
+        Message msg = XBus.mMarshalling.deMarshalling(in);
         return msg;
     }
 

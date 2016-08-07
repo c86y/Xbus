@@ -26,7 +26,7 @@ public class MessageWriter implements Closeable {
     }
 
     public void write(Message msg) {
-
+        XBus.mMarshalling.marshalling(msg, out);
     }
 
     @Override

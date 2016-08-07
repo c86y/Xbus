@@ -12,6 +12,10 @@ import android.os.Process;
 import com.bilibili.xbus.message.Message;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -37,6 +41,33 @@ public class XBus implements Runnable{
 
     private CallbackHandler mCallbackHandler;
 
+    static final Marshalling mMarshalling = new Marshalling() {
+        @Override
+        public void marshalling(Message msg, OutputStream out) {
+            try {
+                ObjectOutputStream oos = new ObjectOutputStream(out);
+                oos.writeObject(msg);
+                oos.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public Message deMarshalling(InputStream in) {
+            Message msg = null;
+            try {
+                ObjectInputStream ois = new ObjectInputStream(in);
+                msg = (Message) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return msg;
+        }
+    };
+
     public XBus(Context context) {
         mContext = context.getApplicationContext();
         mName = mContext.getPackageName() + "#" + Process.myUid() + "#" + Process.myPid();
@@ -52,8 +83,8 @@ public class XBus implements Runnable{
         LocalSocket socket = new LocalSocket();
         LocalSocketAddress address = new LocalSocketAddress(mContext.getPackageName() + XBusDaemon.SOCKET_NAME);
         try {
-            socket.setSoTimeout(DEFAULT_SO_TIMEOUT);
             socket.connect(address);
+            socket.setSoTimeout(DEFAULT_SO_TIMEOUT);
             if (!new MyXBusAuth().auth(socket)) {
                 socket.close();
                 throw new XBusException("Failed to auth");
