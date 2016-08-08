@@ -5,9 +5,9 @@ import android.util.Log;
 /**
  * Created by c86y on 2016/8/7.
  */
-class XBusLog {
+public class XBusLog {
 
-    static final boolean DEBUG = true;
+    public static final boolean DEBUG = true;
 
     private static final String TAG = "XBuss";
 
@@ -16,5 +16,12 @@ class XBusLog {
         if (msg == null) return;
 
         Log.d(TAG, msg);
+    }
+
+    static void printStackTrace(Throwable tr) {
+        if (!DEBUG) return;
+        if (tr == null) return;
+
+        tr.printStackTrace();
     }
 }

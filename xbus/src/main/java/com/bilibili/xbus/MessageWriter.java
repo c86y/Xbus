@@ -25,8 +25,9 @@ public class MessageWriter implements Closeable {
         this.out = new BufferedOutputStream(out);
     }
 
-    public void write(Message msg) {
+    public void write(Message msg) throws IOException {
         XBus.mMarshalling.marshalling(msg, out);
+        out.flush();
     }
 
     @Override

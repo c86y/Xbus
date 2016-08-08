@@ -5,6 +5,7 @@
 package com.bilibili.xbus.message;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -13,26 +14,30 @@ import java.util.Map;
  * @author chengyuan
  * @data 16/8/3.
  */
-public class Message implements Serializable{
+public abstract class Message implements Serializable{
 
     public interface MessageType {
-        public static final byte MESSAGE_CALL = 1;
-        public static final byte MESSAGE_RETURN = 2;
+        public static final byte METHOD_CALL = 1;
+        public static final byte METHOD_RETURN = 2;
     }
 
     public interface HeaderField {
         public static final byte SOURCE = 1;
         public static final byte DEST = 2;
-        public static final byte OBJECT = 3;
+        public static final byte MEMBER = 3;
     }
 
-    private byte type;
-    private Map<Byte, Object> header;
+    private final byte type;
+    protected Map<Byte, Object> headers;
     private Object[] args;
+
+    public Message(byte type, Object... args) {
+        this(type, new HashMap<Byte, Object>(), args);
+    }
 
     public Message(byte type, Map<Byte, Object> headers, Object... args) {
         this.type = type;
-        this.header = headers;
+        this.headers = headers;
         this.args = args;
     }
 
@@ -41,22 +46,26 @@ public class Message implements Serializable{
     }
 
     public Object getHeader(byte key) {
-        return header.get(key);
+        return headers.get(key);
     }
 
     public String getSource() {
-        return (String)header.get(HeaderField.SOURCE);
+        return (String)headers.get(HeaderField.SOURCE);
     }
 
     public String getDest() {
-        return (String)header.get(HeaderField.DEST);
+        return (String)headers.get(HeaderField.DEST);
+    }
+
+    public String getMember() {
+        return (String) headers.get(HeaderField.MEMBER);
     }
 
     public void setArgs(Object[] args) {
         this.args = args;
     }
 
-    public Object getArgs() {
+    public Object[] getArgs() {
         return args;
     }
 

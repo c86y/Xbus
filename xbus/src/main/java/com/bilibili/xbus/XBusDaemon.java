@@ -9,14 +9,9 @@ import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 
 import com.bilibili.xbus.message.Message;
+import com.bilibili.xbus.message.MethodCall;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
@@ -35,17 +30,25 @@ public class XBusDaemon extends Thread {
     public static final String SOCKET_NAME = ".XBusDaemon";
 
     private Context mContext;
-    private XBusRouter mRouter = new XBusRouter();
+    private XBusRouter mRouter;
+    private Dispatcher mDispatcher;
 
-    private XBusAuth mXBusAuth = new MyXBusAuth();
+    private XBusAuth mXBusAuth = new FastXBusAuth();
 
     XBusDaemon(Context context) {
         super(TAG);
         mContext = context.getApplicationContext();
-        new Dispatcher().start();
+        mRouter = new XBusRouter();
+        mRouter.start();
+        mDispatcher = new Dispatcher();
+        mDispatcher.start();
     }
 
-    public void stopRunning() {
+    static String getAddress(Context context) {
+        return context.getPackageName() + SOCKET_NAME;
+    }
+
+    void stopRunning() {
         mIsRunning.set(false);
     }
 
@@ -60,7 +63,7 @@ public class XBusDaemon extends Thread {
     public void run() {
         LocalServerSocket lss = null;
         try {
-            lss = new LocalServerSocket(mContext.getPackageName() + SOCKET_NAME);
+            lss = new LocalServerSocket(getAddress(mContext));
             if (XBusLog.DEBUG) {
                 XBusLog.d("XBus daemon is running");
             }
@@ -73,21 +76,24 @@ public class XBusDaemon extends Thread {
                 }
 
                 if (mXBusAuth.auth(ls)) {
-                    mRouter.add(ls);
+                    new XBusPipe(ls);
                 } else {
                     ls.close();
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            if (XBusLog.DEBUG) {
+                XBusLog.printStackTrace(e);
+            }
         } finally {
             try {
                 if (lss != null) {
                     lss.close();
-
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                if (XBusLog.DEBUG) {
+                    XBusLog.printStackTrace(e);
+                }
             }
         }
     }
@@ -102,51 +108,85 @@ public class XBusDaemon extends Thread {
 
         @Override
         public void run() {
-            Message msg = null;
-            List<WeakReference<XBusPipe>> wps;
-            synchronized (mRouter.inqueue) {
-                try {
-                    while (mRouter.inqueue.size() == 0) {
-                        mRouter.inqueue.wait();
+            while (mIsRunning.get()) {
+                Message msg;
+                List<WeakReference<XBusPipe>> wps;
+                synchronized (mRouter.outqueue) {
+                    try {
+                        while (mRouter.outqueue.size() == 0) {
+                            mRouter.outqueue.wait();
+                        }
+                    } catch (InterruptedException ignored) {
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+
+                    msg = mRouter.outqueue.head();
+                    wps = mRouter.outqueue.remove(msg);
                 }
 
-                msg = mRouter.inqueue.head();
-                wps = mRouter.inqueue.remove(msg);
-            }
+                if (wps != null) {
+                    for (WeakReference<XBusPipe> wp : wps) {
+                        XBusPipe pipe = wp.get();
 
-            if (wps != null) {
-                for (WeakReference<XBusPipe> wp : wps) {
-                    XBusPipe pipe = wp.get();
+                        if (pipe == null) {
+                            continue;
+                        }
 
-                    if (pipe == null) {
-                        continue;
+                        pipe.write(msg);
                     }
-
-                    pipe.write(msg);
                 }
             }
         }
     }
 
-    class XBusRouter {
+    class XBusRouter extends Thread {
 
         private final Map<String, XBusPipe> pipes = new HashMap<>();
         final MagicMap<Message, WeakReference<XBusPipe>> inqueue = new MagicMap<>();
         final MagicMap<Message, WeakReference<XBusPipe>> outqueue = new MagicMap<>();
 
-        void add(LocalSocket socket) {
-            XBusPipe pipe = new XBusPipe(socket);
+        void addConnection(XBusPipe pipe) {
             synchronized (pipes) {
                 pipes.put(pipe.name, pipe);
             }
         }
 
-        void remove(XBusPipe pipe) {
+        void removeConnection(XBusPipe pipe) {
             synchronized (pipes) {
                 pipes.remove(pipe.name);
+            }
+        }
+
+        @Override
+        public void run() {
+            while (mIsRunning.get()) {
+                Message msg;
+                List<WeakReference<XBusPipe>> wps;
+                synchronized (mRouter.inqueue) {
+                    try {
+                        while (mRouter.inqueue.size() == 0) {
+                            mRouter.inqueue.wait();
+                        }
+                    } catch (InterruptedException ignored) {
+                    }
+
+                    msg = mRouter.inqueue.head();
+                    wps = mRouter.inqueue.remove(msg);
+                }
+
+                if (wps != null) {
+                    for (WeakReference<XBusPipe> wp : wps) {
+                        XBusPipe pipe = wp.get();
+
+                        if (pipe == null) {
+                            continue;
+                        }
+
+                        synchronized (mRouter.outqueue) {
+                            mRouter.outqueue.putLast(msg, new WeakReference<>(pipe));
+                            mRouter.outqueue.notifyAll();
+                        }
+                    }
+                }
             }
         }
     }
@@ -155,7 +195,6 @@ public class XBusDaemon extends Thread {
 
     class XBusPipe implements Runnable {
 
-        AtomicBoolean running = new AtomicBoolean(true);
         String name;
         LocalSocket socket;
         private MessageReader min;
@@ -168,39 +207,85 @@ public class XBusDaemon extends Thread {
                 this.mout = new MessageWriter(socket.getOutputStream());
                 new Thread(this, "pipe:" + name).start();
             } catch (IOException e) {
-                e.printStackTrace();
+                if (XBusLog.DEBUG) {
+                    XBusLog.printStackTrace(e);
+                }
             }
         }
 
-        private Message read() throws IOException {
-            Message msg = min.read();
-            return msg;
+        private boolean handshake() {
+            try {
+                Message msg = new MethodCall(getAddress(mContext), "", "getName", null);
+                mout.write(msg);
+
+                msg = min.read();
+                if (msg != null) {
+                    Object[] args = msg.getArgs();
+
+                    if (args != null && args.length > 0) {
+                        this.name = (String) args[0];
+                        mRouter.addConnection(this);
+                        return true;
+                    }
+                }
+            } catch (IOException e) {
+                if (XBusLog.DEBUG) {
+                    XBusLog.printStackTrace(e);
+                }
+
+                close();
+            }
+            return false;
         }
 
         void write(Message msg) {
-            mout.write(msg);
+            try {
+                mout.write(msg);
+            } catch (IOException e) {
+                if (XBusLog.DEBUG) {
+                    XBusLog.printStackTrace(e);
+                }
+
+                close();
+            }
         }
 
-        void stopRunning() {
-            running.set(false);
+        private void close() {
+            XBus.closeQuietly(mout);
+            XBus.closeQuietly(min);
+
+            mRouter.removeConnection(this);
         }
+
 
         @Override
         public void run() {
-            while (running.get()) {
-                Message msg = null;
-                try {
-                    msg = read();
+            if (!handshake()) {
+                return;
+            }
+
+            if (XBusLog.DEBUG) {
+                XBusLog.d("XBusPipe " + name + "run");
+            }
+
+            Message msg;
+            try {
+                while (mIsRunning.get()) {
+                    msg = min.read();
                     String dest = msg.getDest();
                     XBusPipe pipe = mRouter.pipes.get(dest);
                     synchronized (mRouter.inqueue) {
-                        mRouter.inqueue.putLast(msg, new WeakReference<XBusPipe>(pipe));
+                        mRouter.inqueue.putLast(msg, new WeakReference<>(pipe));
                         mRouter.inqueue.notifyAll();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                }
+            } catch (IOException e) {
+                if (XBusLog.DEBUG) {
+                    XBusLog.printStackTrace(e);
                 }
             }
+
+            close();
         }
     }
 }

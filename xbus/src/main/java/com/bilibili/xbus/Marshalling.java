@@ -6,6 +6,7 @@ package com.bilibili.xbus;
 
 import com.bilibili.xbus.message.Message;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -17,7 +18,7 @@ import java.io.OutputStream;
  */
 public interface Marshalling {
 
-    void marshalling(Message msg, OutputStream out);
+    void marshalling(Message msg, OutputStream out) throws IOException;
 
-    Message deMarshalling(InputStream in);
+    Message deMarshalling(InputStream in) throws IOException;
 }

@@ -25,9 +25,8 @@ public class MessageReader implements Closeable {
         this.in = new BufferedInputStream(in);
     }
 
-    public Message read() {
-        Message msg = XBus.mMarshalling.deMarshalling(in);
-        return msg;
+    public Message read() throws IOException {
+        return XBus.mMarshalling.deMarshalling(in);
     }
 
     @Override

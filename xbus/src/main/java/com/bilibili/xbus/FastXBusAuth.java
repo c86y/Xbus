@@ -11,12 +11,12 @@ import android.os.Process;
 import java.io.IOException;
 
 /**
- * MyXBusAuth
+ * FastXBusAuth
  *
  * @author chengyuan
  * @data 16/8/5.
  */
-public class MyXBusAuth implements XBusAuth {
+public class FastXBusAuth implements XBusAuth {
     @Override
     public boolean auth(LocalSocket socket) {
         try {
@@ -25,7 +25,9 @@ public class MyXBusAuth implements XBusAuth {
                 return true;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            if (XBusLog.DEBUG) {
+                XBusLog.printStackTrace(e);
+            }
         }
         return false;
     }

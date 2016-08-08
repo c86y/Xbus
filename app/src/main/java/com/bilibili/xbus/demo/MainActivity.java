@@ -7,20 +7,20 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.XBusException;
 import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
+import com.bilibili.xbus.message.MethodCall;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements XBus.CallbackHandler{
+public class MainActivity extends AppCompatActivity implements XBus.CallbackHandler {
 
     private XBus mXBus;
     private FloatingActionButton mFab;
@@ -40,24 +40,29 @@ public class MainActivity extends AppCompatActivity implements XBus.CallbackHand
                 @Override
                 public void onClick(View view) {
                     Map<Byte, Object> headers = new HashMap<>();
-                    headers.put(Message.HeaderField.SOURCE, mXBus.getName());
-                    headers.put(Message.HeaderField.DEST, mXBus.getName());
-                    Message msg = new Message(Message.MessageType.MESSAGE_CALL, headers, null);
+                    Message msg = new MethodCall(mXBus.getName(), mXBus.getName(), "hello", null);
                     mXBus.send(msg);
                 }
             });
         }
-        startXbusDameon();
+        startXBusDaemon();
 
-        try {
-            Debug.waitForDebugger();
-            mXBus.connect(MainActivity.this);
-        } catch (XBusException e) {
-            e.printStackTrace();
-        }
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(3000);
+                    mXBus.connect(MainActivity.this);
+                } catch (XBusException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
     }
 
-    private void startXbusDameon() {
+    private void startXBusDaemon() {
         Intent intent = new Intent(this, XBusService.class);
         startService(intent);
     }
@@ -88,11 +93,7 @@ public class MainActivity extends AppCompatActivity implements XBus.CallbackHand
     protected void onDestroy() {
         super.onDestroy();
         if (mXBus != null) {
-            try {
-                mXBus.disconnect();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            mXBus.disconnect();
         }
     }
 
