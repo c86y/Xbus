@@ -2,7 +2,7 @@
  * Copyright (c) 2015-2016 BiliBili Inc.
  */
 
-package com.bilibili.xbus;
+package com.bilibili.xbus.utils;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,8 +20,8 @@ public class MagicMap<A, B> {
     private LinkedList<A> q;
 
     public MagicMap() {
-        m = new HashMap<A, LinkedList<B>>();
-        q = new LinkedList<A>();
+        m = new HashMap<>();
+        q = new LinkedList<>();
     }
 
     public A head() {
@@ -32,7 +32,7 @@ public class MagicMap<A, B> {
         if (m.containsKey(a))
             m.get(a).add(b);
         else {
-            LinkedList<B> l = new LinkedList<B>();
+            LinkedList<B> l = new LinkedList<>();
             l.add(b);
             m.put(a, l);
         }
@@ -43,7 +43,7 @@ public class MagicMap<A, B> {
         if (m.containsKey(a))
             m.get(a).add(b);
         else {
-            LinkedList<B> l = new LinkedList<B>();
+            LinkedList<B> l = new LinkedList<>();
             l.add(b);
             m.put(a, l);
         }

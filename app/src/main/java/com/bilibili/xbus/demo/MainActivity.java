@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements XBus.CallbackHand
                 @Override
                 public void onClick(View view) {
                     Map<Byte, Object> headers = new HashMap<>();
-                    Message msg = new MethodCall(mXBus.getName(), mXBus.getName(), "hello", null);
+                    Message msg = new MethodCall(mXBus.getName(), mXBus.getName(), "hello");
                     mXBus.send(msg);
                 }
             });

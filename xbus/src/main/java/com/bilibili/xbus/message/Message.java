@@ -15,40 +15,44 @@ import java.util.Map;
  * @author chengyuan
  * @data 16/8/3.
  */
-public abstract class Message implements Serializable{
+public abstract class Message implements Serializable {
 
-    @Override
-    public String toString() {
-        return "Message{" +
-                "type=" + type +
-                ", headers=" + headers +
-                ", args=" + Arrays.toString(args) +
-                '}';
-    }
+    private static volatile long globalSerial = 0L;
 
     public interface MessageType {
-        public static final byte METHOD_CALL = 1;
-        public static final byte METHOD_RETURN = 2;
+        byte METHOD_CALL = 1;
+        byte METHOD_RETURN = 2;
+        byte ERROR = 3;
     }
 
     public interface HeaderField {
-        public static final byte SOURCE = 1;
-        public static final byte DEST = 2;
-        public static final byte MEMBER = 3;
+        byte SOURCE = 1;
+        byte DEST = 2;
+        byte ACTION = 3;
+        byte ERROR_CODE = 4;
+        byte REPLY_SERIAL = 5;
     }
 
+    private final long serial;
     private final byte type;
-    protected Map<Byte, Object> headers;
-    private Object[] args;
+    protected Map<Byte, Serializable> headers;
+    private Serializable[] args;
 
-    public Message(byte type, Object... args) {
-        this(type, new HashMap<Byte, Object>(), args);
+    public Message(byte type, Serializable... args) {
+        this(type, new HashMap<Byte, Serializable>(), args);
     }
 
-    public Message(byte type, Map<Byte, Object> headers, Object... args) {
+    public Message(byte type, Map<Byte, Serializable> headers, Serializable... args) {
+        synchronized (Message.class) {
+            serial = globalSerial++;
+        }
         this.type = type;
         this.headers = headers;
         this.args = args;
+    }
+
+    public long getSerial() {
+        return serial;
     }
 
     public byte getType() {
@@ -60,23 +64,34 @@ public abstract class Message implements Serializable{
     }
 
     public String getSource() {
-        return (String)headers.get(HeaderField.SOURCE);
+        return (String) headers.get(HeaderField.SOURCE);
     }
 
     public String getDest() {
-        return (String)headers.get(HeaderField.DEST);
+        return (String) headers.get(HeaderField.DEST);
     }
 
-    public String getMember() {
-        return (String) headers.get(HeaderField.MEMBER);
+    public String getAction() {
+        return (String) headers.get(HeaderField.ACTION);
     }
 
-    public void setArgs(Object[] args) {
+    public void setArgs(Serializable[] args) {
         this.args = args;
     }
 
-    public Object[] getArgs() {
+    public Serializable[] getArgs() {
         return args;
     }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "serial=" + serial +
+                ", type=" + type +
+                ", headers=" + headers +
+                ", args=" + Arrays.toString(args) +
+                '}';
+    }
+
 
 }

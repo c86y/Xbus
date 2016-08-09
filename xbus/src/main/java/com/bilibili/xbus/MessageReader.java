@@ -5,6 +5,7 @@
 package com.bilibili.xbus;
 
 import com.bilibili.xbus.message.Message;
+import com.bilibili.xbus.utils.XBusLog;
 
 import java.io.Closeable;
 import java.io.IOException;

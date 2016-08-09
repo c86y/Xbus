@@ -1,4 +1,4 @@
-package com.bilibili.xbus;
+package com.bilibili.xbus.utils;
 
 import android.util.Log;
 
@@ -11,14 +11,14 @@ public class XBusLog {
 
     private static final String TAG = "XBus";
 
-    static void d(String msg) {
+    public static void d(String msg) {
         if (!ENABLE) return;
         if (msg == null) return;
 
         Log.w(TAG, msg);
     }
 
-    static void printStackTrace(Throwable tr) {
+    public static void printStackTrace(Throwable tr) {
         if (!ENABLE) return;
         if (tr == null) return;
 

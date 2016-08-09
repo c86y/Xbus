@@ -13,6 +13,7 @@ import android.support.annotation.WorkerThread;
 
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodReturn;
+import com.bilibili.xbus.utils.XBusLog;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -127,13 +128,13 @@ public class XBus implements Runnable {
     }
 
     private void handleMessage(Message msg) {
-        String member = msg.getMember();
+        String member = msg.getAction();
         if (member == null) {
             return;
         }
 
         if ("getName".equals(member)) {
-            msg = new MethodReturn(getName(), XBusDaemon.getName(mContext), member, getName());
+            msg = new MethodReturn(getName(), XBusDaemon.getName(mContext), msg.getSerial(), getName());
             send(msg);
         }
     }

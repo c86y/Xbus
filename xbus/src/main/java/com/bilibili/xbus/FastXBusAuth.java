@@ -8,6 +8,8 @@ import android.net.Credentials;
 import android.net.LocalSocket;
 import android.os.Process;
 
+import com.bilibili.xbus.utils.XBusLog;
+
 import java.io.IOException;
 
 /**

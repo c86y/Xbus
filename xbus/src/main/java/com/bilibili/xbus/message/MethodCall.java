@@ -2,6 +2,8 @@ package com.bilibili.xbus.message;
 
 import android.support.annotation.NonNull;
 
+import java.io.Serializable;
+
 /**
  * MethodCall
  *
@@ -10,10 +12,10 @@ import android.support.annotation.NonNull;
  */
 public class MethodCall extends Message {
 
-    public MethodCall(@NonNull String source, @NonNull String dest, @NonNull String action, Object... args) {
+    public MethodCall(@NonNull String source, @NonNull String dest, @NonNull String action, Serializable... args) {
         super(MessageType.METHOD_CALL, args);
         this.headers.put(HeaderField.SOURCE, source);
         this.headers.put(HeaderField.DEST, dest);
-        this.headers.put(HeaderField.MEMBER, action);
+        this.headers.put(HeaderField.ACTION, action);
     }
 }

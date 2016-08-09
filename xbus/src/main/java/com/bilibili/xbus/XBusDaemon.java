@@ -8,9 +8,14 @@ import android.content.Context;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.os.Debug;
+import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
+import android.util.Pair;
 
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
+import com.bilibili.xbus.utils.MagicMap;
+import com.bilibili.xbus.utils.XBusLog;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -40,9 +45,7 @@ public class XBusDaemon extends Thread {
         super(TAG);
         mContext = context.getApplicationContext();
         mRouter = new XBusRouter();
-        mRouter.start();
         mDispatcher = new Dispatcher();
-        mDispatcher.start();
     }
 
     static String getName(Context context) {
@@ -61,6 +64,8 @@ public class XBusDaemon extends Thread {
     @Override
     public synchronized void start() {
         mIsRunning.set(true);
+        mRouter.start();
+        mDispatcher.start();
         super.start();
     }
 
@@ -86,7 +91,7 @@ public class XBusDaemon extends Thread {
                 }
 
                 if (mXBusAuth.auth(ls)) {
-                    new XBusPipe(ls).start();
+                    new XBusConnection(ls).start();
                 } else {
                     ls.close();
                 }
@@ -119,29 +124,20 @@ public class XBusDaemon extends Thread {
         @Override
         public void run() {
             while (mIsRunning.get()) {
-                Message msg;
-                List<WeakReference<XBusPipe>> wps;
-                synchronized (mRouter.outqueue) {
-                    try {
-                        while (mRouter.outqueue.size() == 0) {
-                            mRouter.outqueue.wait();
-                        }
-                    } catch (InterruptedException ignored) {
-                    }
+                Pair<Message, List<WeakReference<XBusConnection>>> pair = mRouter.pollOut();
 
-                    msg = mRouter.outqueue.head();
-                    wps = mRouter.outqueue.remove(msg);
-                }
+                Message msg = pair.first;
+                List<WeakReference<XBusConnection>> wcs = pair.second;
 
-                if (wps != null) {
-                    for (WeakReference<XBusPipe> wp : wps) {
-                        XBusPipe pipe = wp.get();
+                if (wcs != null) {
+                    for (WeakReference<XBusConnection> wp : wcs) {
+                        XBusConnection conn = wp.get();
 
-                        if (pipe == null) {
+                        if (conn == null) {
                             continue;
                         }
 
-                        pipe.write(msg);
+                        conn.write(msg);
                     }
                 }
             }
@@ -150,52 +146,96 @@ public class XBusDaemon extends Thread {
 
     class XBusRouter extends Thread {
 
-        private final Map<String, XBusPipe> pipes = new HashMap<>();
-        final MagicMap<Message, WeakReference<XBusPipe>> inqueue = new MagicMap<>();
-        final MagicMap<Message, WeakReference<XBusPipe>> outqueue = new MagicMap<>();
+        private final Map<String, XBusConnection> mConns = new HashMap<>();
+        private final MagicMap<Message, WeakReference<XBusConnection>> mInQueue = new MagicMap<>();
+        private final MagicMap<Message, WeakReference<XBusConnection>> mOutQueue = new MagicMap<>();
 
-        void addConnection(XBusPipe pipe) {
-            synchronized (pipes) {
-                pipes.put(pipe.name, pipe);
+        void addConnection(XBusConnection conn) {
+            synchronized (mConns) {
+                mConns.put(conn.name, conn);
             }
         }
 
-        void removeConnection(XBusPipe pipe) {
-            synchronized (pipes) {
-                pipes.remove(pipe.name);
+        void removeConnection(XBusConnection conn) {
+            synchronized (mConns) {
+                mConns.remove(conn.name);
             }
+        }
+
+        void offerIn(Message msg, XBusConnection conn) {
+            synchronized (mInQueue) {
+                mInQueue.putLast(msg, new WeakReference<>(conn));
+                mInQueue.notifyAll();
+            }
+        }
+
+        private void offerOut(Message msg, XBusConnection conn) {
+            synchronized (mOutQueue) {
+                mOutQueue.putLast(msg, new WeakReference<>(conn));
+                mOutQueue.notifyAll();
+            }
+        }
+
+        @WorkerThread
+        @NonNull
+        private Pair<Message, List<WeakReference<XBusConnection>>> pollIn() {
+            Message msg;
+            List<WeakReference<XBusConnection>> wcs;
+            synchronized (mInQueue) {
+                try {
+                    while (mInQueue.size() == 0) {
+                        mInQueue.wait();
+                    }
+                } catch (InterruptedException ignored) {
+                }
+
+                msg = mInQueue.head();
+                wcs = mInQueue.remove(msg);
+            }
+
+            return new Pair<>(msg, wcs);
+        }
+
+        @WorkerThread
+        @NonNull
+        Pair<Message, List<WeakReference<XBusConnection>>> pollOut() {
+            Message msg;
+            List<WeakReference<XBusConnection>> wcs;
+
+            synchronized (mOutQueue) {
+                try {
+                    while (mOutQueue.size() == 0) {
+                        mOutQueue.wait();
+                    }
+                } catch (InterruptedException ignored) {
+                }
+
+                msg = mOutQueue.head();
+                wcs = mOutQueue.remove(msg);
+            }
+
+            return new Pair<>(msg, wcs);
         }
 
         @Override
         public void run() {
             while (mIsRunning.get()) {
-                Message msg;
-                List<WeakReference<XBusPipe>> wps;
-                synchronized (mRouter.inqueue) {
-                    try {
-                        while (mRouter.inqueue.size() == 0) {
-                            mRouter.inqueue.wait();
-                        }
-                    } catch (InterruptedException ignored) {
-                    }
+                Pair<Message, List<WeakReference<XBusConnection>>> pair = pollIn();
+                Message msg = pair.first;
+                List<WeakReference<XBusConnection>> wcs = pair.second;
 
-                    msg = mRouter.inqueue.head();
-                    wps = mRouter.inqueue.remove(msg);
+                if (wcs == null) {
+                    continue;
                 }
 
-                if (wps != null) {
-                    for (WeakReference<XBusPipe> wp : wps) {
-                        XBusPipe pipe = wp.get();
+                for (WeakReference<XBusConnection> wp : wcs) {
+                    XBusConnection conn = wp.get();
 
-                        if (pipe == null) {
-                            continue;
-                        }
-
-                        synchronized (mRouter.outqueue) {
-                            mRouter.outqueue.putLast(msg, new WeakReference<>(pipe));
-                            mRouter.outqueue.notifyAll();
-                        }
+                    if (conn == null) {
+                        continue;
                     }
+
+                    offerOut(msg, conn);
                 }
             }
         }
@@ -203,15 +243,15 @@ public class XBusDaemon extends Thread {
 
     private AtomicBoolean mIsRunning = new AtomicBoolean(false);
 
-    class XBusPipe extends Thread {
+    class XBusConnection extends Thread {
 
         String name;
         LocalSocket socket;
         private MessageReader min;
         private MessageWriter mout;
 
-        public XBusPipe(LocalSocket socket) {
-            super("XBusPipe");
+        public XBusConnection(LocalSocket socket) {
+            super("XBusConnection");
             this.socket = socket;
             try {
                 this.min = new MessageReader(XBusDaemon.getName(mContext), socket.getInputStream());
@@ -224,7 +264,7 @@ public class XBusDaemon extends Thread {
         }
 
         private boolean handshake() throws IOException {
-            Message msg = new MethodCall(XBusDaemon.getName(mContext), "", "getName", null);
+            Message msg = new MethodCall(XBusDaemon.getName(mContext), "", "getName");
             mout.write(msg);
 
             msg = min.read();
@@ -273,18 +313,15 @@ public class XBusDaemon extends Thread {
             try {
                 if (handshake()) {
                     if (XBusLog.ENABLE) {
-                        XBusLog.d("XBusPipe " + name + "handshake success");
+                        XBusLog.d("XBusConnection " + name + "handshake success");
                     }
 
                     Message msg;
                     while (mIsRunning.get()) {
                         msg = min.read();
                         String dest = msg.getDest();
-                        XBusPipe pipe = mRouter.pipes.get(dest);
-                        synchronized (mRouter.inqueue) {
-                            mRouter.inqueue.putLast(msg, new WeakReference<>(pipe));
-                            mRouter.inqueue.notifyAll();
-                        }
+                        XBusConnection conn = mRouter.mConns.get(dest);
+                        mRouter.offerIn(msg, conn);
                     }
                 }
             } catch (IOException e) {
