@@ -7,6 +7,7 @@ package com.bilibili.xbus;
 import android.content.Context;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
+import android.os.Debug;
 
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
@@ -44,6 +45,10 @@ public class XBusDaemon extends Thread {
         mDispatcher.start();
     }
 
+    static String getName(Context context) {
+        return getAddress(context);
+    }
+
     static String getAddress(Context context) {
         return context.getPackageName() + SOCKET_NAME;
     }
@@ -61,28 +66,33 @@ public class XBusDaemon extends Thread {
 
     @Override
     public void run() {
+        if (XBus.DEBUG) {
+            Debug.waitForDebugger();
+        }
+
         LocalServerSocket lss = null;
         try {
             lss = new LocalServerSocket(getAddress(mContext));
-            if (XBusLog.DEBUG) {
+            if (XBusLog.ENABLE) {
                 XBusLog.d("XBus daemon is running");
             }
 
             while (mIsRunning.get()) {
                 LocalSocket ls = lss.accept();
+                ls.setSoTimeout(XBus.DEFAULT_SO_TIMEOUT);
 
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.d("accept socket: " + ls);
                 }
 
                 if (mXBusAuth.auth(ls)) {
-                    new XBusPipe(ls);
+                    new XBusPipe(ls).start();
                 } else {
                     ls.close();
                 }
             }
         } catch (IOException e) {
-            if (XBusLog.DEBUG) {
+            if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
             }
         } finally {
@@ -91,7 +101,7 @@ public class XBusDaemon extends Thread {
                     lss.close();
                 }
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
             }
@@ -193,7 +203,7 @@ public class XBusDaemon extends Thread {
 
     private AtomicBoolean mIsRunning = new AtomicBoolean(false);
 
-    class XBusPipe implements Runnable {
+    class XBusPipe extends Thread {
 
         String name;
         LocalSocket socket;
@@ -201,48 +211,42 @@ public class XBusDaemon extends Thread {
         private MessageWriter mout;
 
         public XBusPipe(LocalSocket socket) {
+            super("XBusPipe");
             this.socket = socket;
             try {
-                this.min = new MessageReader(socket.getInputStream());
-                this.mout = new MessageWriter(socket.getOutputStream());
-                new Thread(this, "pipe:" + name).start();
+                this.min = new MessageReader(XBusDaemon.getName(mContext), socket.getInputStream());
+                this.mout = new MessageWriter(XBusDaemon.getName(mContext), socket.getOutputStream());
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
             }
         }
 
-        private boolean handshake() {
-            try {
-                Message msg = new MethodCall(getAddress(mContext), "", "getName", null);
-                mout.write(msg);
+        private boolean handshake() throws IOException {
+            Message msg = new MethodCall(XBusDaemon.getName(mContext), "", "getName", null);
+            mout.write(msg);
 
-                msg = min.read();
-                if (msg != null) {
-                    Object[] args = msg.getArgs();
+            msg = min.read();
+            if (msg != null) {
+                Object[] args = msg.getArgs();
 
-                    if (args != null && args.length > 0) {
-                        this.name = (String) args[0];
-                        mRouter.addConnection(this);
-                        return true;
-                    }
+                if (args != null && args.length > 0) {
+                    this.name = (String) args[0];
+                    mRouter.addConnection(this);
+                    return true;
                 }
-            } catch (IOException e) {
-                if (XBusLog.DEBUG) {
-                    XBusLog.printStackTrace(e);
-                }
-
-                close();
             }
             return false;
         }
 
         void write(Message msg) {
             try {
-                mout.write(msg);
+                if (mout != null) {
+                    mout.write(msg);
+                }
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
 
@@ -253,34 +257,38 @@ public class XBusDaemon extends Thread {
         private void close() {
             XBus.closeQuietly(mout);
             XBus.closeQuietly(min);
+            try {
+                socket.close();
+            } catch (IOException e) {
+                if (XBusLog.ENABLE) {
+                    XBusLog.printStackTrace(e);
+                }
+            }
 
             mRouter.removeConnection(this);
         }
 
-
         @Override
         public void run() {
-            if (!handshake()) {
-                return;
-            }
-
-            if (XBusLog.DEBUG) {
-                XBusLog.d("XBusPipe " + name + "run");
-            }
-
-            Message msg;
             try {
-                while (mIsRunning.get()) {
-                    msg = min.read();
-                    String dest = msg.getDest();
-                    XBusPipe pipe = mRouter.pipes.get(dest);
-                    synchronized (mRouter.inqueue) {
-                        mRouter.inqueue.putLast(msg, new WeakReference<>(pipe));
-                        mRouter.inqueue.notifyAll();
+                if (handshake()) {
+                    if (XBusLog.ENABLE) {
+                        XBusLog.d("XBusPipe " + name + "handshake success");
+                    }
+
+                    Message msg;
+                    while (mIsRunning.get()) {
+                        msg = min.read();
+                        String dest = msg.getDest();
+                        XBusPipe pipe = mRouter.pipes.get(dest);
+                        synchronized (mRouter.inqueue) {
+                            mRouter.inqueue.putLast(msg, new WeakReference<>(pipe));
+                            mRouter.inqueue.notifyAll();
+                        }
                     }
                 }
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
             }

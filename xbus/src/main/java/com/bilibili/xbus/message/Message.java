@@ -5,6 +5,7 @@
 package com.bilibili.xbus.message;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +16,15 @@ import java.util.Map;
  * @data 16/8/3.
  */
 public abstract class Message implements Serializable{
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "type=" + type +
+                ", headers=" + headers +
+                ", args=" + Arrays.toString(args) +
+                '}';
+    }
 
     public interface MessageType {
         public static final byte METHOD_CALL = 1;

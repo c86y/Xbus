@@ -6,9 +6,9 @@ package com.bilibili.xbus;
 
 import com.bilibili.xbus.message.Message;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -19,19 +19,38 @@ import java.io.OutputStream;
  */
 public class MessageWriter implements Closeable {
 
-    private OutputStream out;
+    private String name;
+    private ObjectOutputStream out;
 
-    public MessageWriter(OutputStream out) {
-        this.out = new BufferedOutputStream(out);
+    public MessageWriter(String name, OutputStream out) {
+        try {
+            this.name = name;
+            this.out = new ObjectOutputStream(out);
+        } catch (IOException e) {
+            if (XBusLog.ENABLE) {
+                XBusLog.printStackTrace(e);
+            }
+
+            XBus.closeQuietly(this);
+        }
     }
 
     public void write(Message msg) throws IOException {
-        XBus.mMarshalling.marshalling(msg, out);
+        if (out == null) {
+            throw new XBusException("Output stream is closed!");
+        }
+
+        if (XBusLog.ENABLE) {
+            XBusLog.d(name + " write msg: " + msg);
+        }
+
+        out.writeObject(msg);
         out.flush();
     }
 
     @Override
     public void close() throws IOException {
         out.close();
+        out = null;
     }
 }

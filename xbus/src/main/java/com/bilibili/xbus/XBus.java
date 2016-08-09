@@ -7,6 +7,7 @@ package com.bilibili.xbus;
 import android.content.Context;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.os.Debug;
 import android.os.Process;
 import android.support.annotation.WorkerThread;
 
@@ -15,12 +16,6 @@ import com.bilibili.xbus.message.MethodReturn;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -31,7 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class XBus implements Runnable {
 
-    private static final int DEFAULT_SO_TIMEOUT = 30000;
+    static final boolean DEBUG = false;
+
+    static final int DEFAULT_SO_TIMEOUT = 0;
 
     public interface CallbackHandler {
 
@@ -46,28 +43,6 @@ public class XBus implements Runnable {
 
     private CallbackHandler mCallbackHandler;
 
-    static final Marshalling mMarshalling = new Marshalling() {
-        @Override
-        public void marshalling(Message msg, OutputStream out) throws IOException {
-            ObjectOutputStream oos = new ObjectOutputStream(out);
-            oos.writeObject(msg);
-        }
-
-        @Override
-        public Message deMarshalling(InputStream in) throws IOException {
-            Message msg = null;
-            try {
-                ObjectInputStream ois = new ObjectInputStream(in);
-                msg = (Message) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                if (XBusLog.DEBUG) {
-                    XBusLog.printStackTrace(e);
-                }
-            }
-            return msg;
-        }
-    };
-
     public XBus(Context context) {
         mContext = context.getApplicationContext();
         mName = mContext.getPackageName() + "#" + Process.myUid() + "#" + Process.myPid();
@@ -79,6 +54,10 @@ public class XBus implements Runnable {
 
     @WorkerThread
     public void connect(CallbackHandler handler) throws XBusException {
+        if (XBus.DEBUG) {
+            Debug.waitForDebugger();
+        }
+
         mCallbackHandler = handler;
 
         LocalSocket socket = new LocalSocket();
@@ -91,12 +70,13 @@ public class XBus implements Runnable {
                 throw new XBusException("Failed to auth");
             }
 
-            min = new MessageReader(socket.getInputStream());
-            mout = new MessageWriter(socket.getOutputStream());
+            mout = new MessageWriter(getName(), socket.getOutputStream());
+            min = new MessageReader(getName(), socket.getInputStream());
+
             runing.set(true);
             new Thread(this).start();
         } catch (IOException e) {
-            if (XBusLog.DEBUG) {
+            if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
             }
 
@@ -110,12 +90,11 @@ public class XBus implements Runnable {
             try {
                 mout.write(msg);
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
 
-                closeQuietly(mout);
-                mout = null;
+                disconnect();
             }
         }
     }
@@ -127,12 +106,11 @@ public class XBus implements Runnable {
             try {
                 msg = min.read();
             } catch (IOException e) {
-                if (XBusLog.DEBUG) {
+                if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
                 }
 
-                closeQuietly(min);
-                min = null;
+                disconnect();
             }
         }
         return msg;
@@ -140,8 +118,12 @@ public class XBus implements Runnable {
 
     public void disconnect() {
         runing.set(false);
+
         closeQuietly(min);
+        min = null;
+
         closeQuietly(mout);
+        mout = null;
     }
 
     private void handleMessage(Message msg) {
@@ -151,7 +133,7 @@ public class XBus implements Runnable {
         }
 
         if ("getName".equals(member)) {
-            msg = new MethodReturn(Message.MessageType.METHOD_RETURN, getName(), XBusDaemon.getAddress(mContext), getName());
+            msg = new MethodReturn(getName(), XBusDaemon.getName(mContext), member, getName());
             send(msg);
         }
     }
@@ -164,7 +146,7 @@ public class XBus implements Runnable {
                 continue;
             }
 
-            if (XBusDaemon.getAddress(mContext).equals(msg.getSource())) {
+            if (XBusDaemon.getName(mContext).equals(msg.getSource())) {
                 handleMessage(msg);
                 continue;
             }
@@ -179,10 +161,7 @@ public class XBus implements Runnable {
         if (closeable != null) {
             try {
                 closeable.close();
-            } catch (IOException e) {
-                if (XBusLog.DEBUG) {
-                    XBusLog.printStackTrace(e);
-                }
+            } catch (IOException ignored) {
             }
         }
     }

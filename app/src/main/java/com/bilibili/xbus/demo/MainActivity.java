@@ -98,11 +98,11 @@ public class MainActivity extends AppCompatActivity implements XBus.CallbackHand
     }
 
     @Override
-    public void handle(Message msg) {
+    public void handle(final Message msg) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Snackbar.make(mFab, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(mFab, "Read msg: " + msg, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });

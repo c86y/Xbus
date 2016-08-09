@@ -25,7 +25,7 @@ public class FastXBusAuth implements XBusAuth {
                 return true;
             }
         } catch (IOException e) {
-            if (XBusLog.DEBUG) {
+            if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
             }
         }

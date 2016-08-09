@@ -9,7 +9,7 @@ package com.bilibili.xbus.message;
 public class MethodReturn extends Message{
 
 
-    public MethodReturn(byte type, String source, String dest, String action, Object... args) {
+    public MethodReturn(String source, String dest, String action, Object... args) {
         super(MessageType.METHOD_RETURN, args);
         this.headers.put(HeaderField.SOURCE, source);
         this.headers.put(HeaderField.DEST, dest);

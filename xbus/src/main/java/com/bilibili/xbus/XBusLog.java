@@ -7,21 +7,21 @@ import android.util.Log;
  */
 public class XBusLog {
 
-    public static final boolean DEBUG = true;
+    public static final boolean ENABLE = true;
 
-    private static final String TAG = "XBuss";
+    private static final String TAG = "XBus";
 
     static void d(String msg) {
-        if (!DEBUG) return;
+        if (!ENABLE) return;
         if (msg == null) return;
 
-        Log.d(TAG, msg);
+        Log.w(TAG, msg);
     }
 
     static void printStackTrace(Throwable tr) {
-        if (!DEBUG) return;
+        if (!ENABLE) return;
         if (tr == null) return;
 
-        tr.printStackTrace();
+        Log.e(TAG, Log.getStackTraceString(tr));
     }
 }
