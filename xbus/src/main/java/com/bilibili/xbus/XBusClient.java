@@ -111,10 +111,6 @@ public class XBusClient {
     }
 
     public void send(Message msg) {
-        if (!mRunning.get()) {
-            return;
-        }
-
         mSendQueue.add(msg);
     }
 
