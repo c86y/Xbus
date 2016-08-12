@@ -32,7 +32,7 @@ public class MessageWriter implements Closeable {
                 XBusLog.printStackTrace(e);
             }
 
-            XBus.closeQuietly(this);
+            XBusClient.closeQuietly(this);
         }
     }
 
@@ -45,7 +45,7 @@ public class MessageWriter implements Closeable {
             XBusLog.d(name + " write msg: " + msg);
         }
 
-        out.writeObject(msg);
+        out.writeUnshared(msg);
         out.flush();
     }
 

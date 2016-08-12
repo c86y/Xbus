@@ -17,14 +17,14 @@ import android.support.annotation.Nullable;
  */
 public class XBusService extends Service{
 
-    private XBusDaemon mXBusDaemon;
+    private XBusHost mXBusHost;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        mXBusDaemon = new XBusDaemon(this);
-        mXBusDaemon.start();
+        mXBusHost = new XBusHost(this);
+        mXBusHost.start();
     }
 
     @Nullable
@@ -41,9 +41,9 @@ public class XBusService extends Service{
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mXBusDaemon != null) {
-            mXBusDaemon.stopRunning();
-            mXBusDaemon = null;
+        if (mXBusHost != null) {
+            mXBusHost.stopRunning();
+            mXBusHost = null;
         }
     }
 }

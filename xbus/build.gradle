@@ -20,4 +20,5 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile "com.android.support:support-v4:${rootProject.ext.androidSupportLibraryVersion}"
+    compile 'com.alibaba:fastjson:1.1.52.android'
 }

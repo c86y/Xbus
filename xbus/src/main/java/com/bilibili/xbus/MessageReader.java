@@ -32,7 +32,7 @@ public class MessageReader implements Closeable {
                 XBusLog.printStackTrace(e);
             }
 
-            XBus.closeQuietly(this);
+            XBusClient.closeQuietly(this);
         }
     }
 
@@ -43,7 +43,7 @@ public class MessageReader implements Closeable {
 
         Message msg = null;
         try {
-            msg = (Message) in.readObject();
+            msg = (Message) in.readUnshared();
 
             if (XBusLog.ENABLE) {
                 XBusLog.d(name + " read msg: " + msg);

@@ -2,8 +2,6 @@ package com.bilibili.xbus.message;
 
 import android.support.annotation.NonNull;
 
-import java.io.Serializable;
-
 /**
  * MethodReturn
  *
@@ -12,8 +10,13 @@ import java.io.Serializable;
  */
 public class MethodReturn extends Message {
 
-    public MethodReturn(@NonNull String source, @NonNull String dest, long replySerial, Serializable... args) {
+    public MethodReturn(@NonNull String source, @NonNull String dest, long replySerial, Object... args) {
         super(MessageType.METHOD_RETURN, args);
+
+        if (source == null || dest == null) {
+            throw new IllegalArgumentException("Must set source, dest to MethodReturn");
+        }
+
         this.headers.put(HeaderField.SOURCE, source);
         this.headers.put(HeaderField.DEST, dest);
         this.headers.put(HeaderField.REPLY_SERIAL, replySerial);

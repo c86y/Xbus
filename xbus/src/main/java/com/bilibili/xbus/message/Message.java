@@ -28,21 +28,22 @@ public abstract class Message implements Serializable {
     public interface HeaderField {
         byte SOURCE = 1;
         byte DEST = 2;
-        byte ACTION = 3;
-        byte ERROR_CODE = 4;
-        byte REPLY_SERIAL = 5;
+        byte INTERFACE = 3;
+        byte ACTION = 4;
+        byte ERROR_CODE = 5;
+        byte REPLY_SERIAL = 6;
     }
 
-    private final long serial;
-    private final byte type;
-    protected Map<Byte, Serializable> headers;
-    private Serializable[] args;
+    protected final long serial;
+    protected final byte type;
+    protected HashMap<Byte, Object> headers;
+    protected Object[] args;
 
-    public Message(byte type, Serializable... args) {
-        this(type, new HashMap<Byte, Serializable>(), args);
+    public Message(byte type, Object... args) {
+        this(type, new HashMap<Byte, Object>(), args);
     }
 
-    public Message(byte type, Map<Byte, Serializable> headers, Serializable... args) {
+    public Message(byte type, HashMap<Byte, Object> headers, Object... args) {
         synchronized (Message.class) {
             serial = globalSerial++;
         }
@@ -71,15 +72,19 @@ public abstract class Message implements Serializable {
         return (String) headers.get(HeaderField.DEST);
     }
 
+    public String getInterface() {
+        return (String) headers.get(HeaderField.INTERFACE);
+    }
+
     public String getAction() {
         return (String) headers.get(HeaderField.ACTION);
     }
 
-    public void setArgs(Serializable[] args) {
+    public void setArgs(Object[] args) {
         this.args = args;
     }
 
-    public Serializable[] getArgs() {
+    public Object[] getArgs() {
         return args;
     }
 
