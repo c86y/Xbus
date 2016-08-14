@@ -31,39 +31,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author chengyuan
  * @data 16/8/3.
  */
-public class XBusHost extends Thread {
+public class
+XBusHost extends Thread {
 
     private static final String TAG = "XBusHost";
-    public static final String SOCKET_NAME = ".XBusHost";
 
     private Context mContext;
     private XBusRouter mRouter;
     private Dispatcher mDispatcher;
+    private final String mHostPath;
     private final XBusAuth mXBusAuth = new FastAuth();
 
     XBusHost(Context context) {
         super(TAG);
         mContext = context.getApplicationContext();
+        mHostPath = XBus.getHostPath(mContext);
         mRouter = new XBusRouter();
         mDispatcher = new Dispatcher();
-    }
-
-    public String getPath() {
-        return getPath(mContext);
-    }
-
-    public static String getPath(Context context) {
-        return getAddress(context);
-    }
-
-    public static String getAddress(Context context) {
-        return context.getPackageName() + SOCKET_NAME;
     }
 
     void stopRunning() {
         mRunning.set(false);
     }
-
 
     @Override
     public synchronized void start() {
@@ -75,20 +64,20 @@ public class XBusHost extends Thread {
 
     @Override
     public void run() {
-        if (XBusClient.DEBUG) {
+        if (XBus.DEBUG) {
             Debug.waitForDebugger();
         }
 
         LocalServerSocket lss = null;
         try {
-            lss = new LocalServerSocket(getAddress(mContext));
+            lss = new LocalServerSocket(XBus.getHostAddress(mContext));
             if (XBusLog.ENABLE) {
-                XBusLog.d("XBusClient daemon is running");
+                XBusLog.d("XBus daemon is running");
             }
 
             while (mRunning.get()) {
                 LocalSocket ls = lss.accept();
-                ls.setSoTimeout(XBusClient.DEFAULT_SO_TIMEOUT);
+                ls.setSoTimeout(XBus.DEFAULT_SO_TIMEOUT);
 
                 if (XBusLog.ENABLE) {
                     XBusLog.d("accept socket: " + ls);
@@ -267,8 +256,8 @@ public class XBusHost extends Thread {
             super("Connection");
             this.socket = socket;
             try {
-                this.mIn = new MessageReader(XBusHost.getPath(mContext), socket.getInputStream());
-                this.mOut = new MessageWriter(XBusHost.getPath(mContext), socket.getOutputStream());
+                this.mIn = new MessageReader(mHostPath, socket.getInputStream());
+                this.mOut = new MessageWriter(mHostPath, socket.getOutputStream());
             } catch (IOException e) {
                 if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
@@ -291,8 +280,8 @@ public class XBusHost extends Thread {
         }
 
         private void close() {
-            XBusClient.closeQuietly(mOut);
-            XBusClient.closeQuietly(mIn);
+            XBus.closeQuietly(mOut);
+            XBus.closeQuietly(mIn);
             try {
                 socket.close();
             } catch (IOException e) {
@@ -311,7 +300,7 @@ public class XBusHost extends Thread {
             while (state != STATE_HANDSHAKE_OK) {
                 switch (state) {
                     case STATE_HANDSHAKE_INIT:
-                        out.write(new MethodCall(getPath(), XBusClient.PATH_UNKNOWN, METHOD_REQUEST_NAME));
+                        out.write(new MethodCall(mHostPath, XBus.PATH_UNKNOWN, METHOD_REQUEST_NAME));
                         state = STATE_HANDSHAKE_WAIT;
                         break;
                     case STATE_HANDSHAKE_WAIT:
@@ -321,18 +310,18 @@ public class XBusHost extends Thread {
                         }
 
                         if (msg.getType() != Message.MessageType.METHOD_RETURN) {
-                            out.write(new Error(getPath(), XBusHost.getPath(mContext), Error.ErrorCode.E_INVALID_MSG_TYPE, msg.getSerial()));
+                            out.write(new Error(mHostPath, XBus.PATH_UNKNOWN, Error.ErrorCode.E_INVALID_MSG_TYPE, msg.getSerial()));
                             throw new XBusException("handshake failed when state = " + state);
                         }
 
                         Object[] args = msg.getArgs();
                         if (args == null || args.length == 0) {
-                            out.write(new Error(getPath(), XBusClient.PATH_UNKNOWN, Error.ErrorCode.E_INVALID_MSG_ARGS, msg.getSerial()));
+                            out.write(new Error(mHostPath, XBus.PATH_UNKNOWN, Error.ErrorCode.E_INVALID_MSG_ARGS, msg.getSerial()));
                             throw new XBusException("handshake failed when state = " + state);
                         }
 
                         remotePath = (String) args[0];
-                        out.write(new MethodCall(getPath(), remotePath, METHOD_ACCEPT));
+                        out.write(new MethodCall(mHostPath, remotePath, METHOD_ACCEPT));
                         state = STATE_HANDSHAKE_OK;
                         break;
                 }

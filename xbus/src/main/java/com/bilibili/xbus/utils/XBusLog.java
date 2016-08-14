@@ -9,7 +9,7 @@ public class XBusLog {
 
     public static final boolean ENABLE = true;
 
-    private static final String TAG = "XBusClient";
+    private static final String TAG = "XBus";
 
     public static void d(String msg) {
         if (!ENABLE) return;

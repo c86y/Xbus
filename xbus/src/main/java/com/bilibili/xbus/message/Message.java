@@ -4,10 +4,11 @@
 
 package com.bilibili.xbus.message;
 
+import com.bilibili.xbus.proxy.RemoteObject;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Message
@@ -28,7 +29,7 @@ public abstract class Message implements Serializable {
     public interface HeaderField {
         byte SOURCE = 1;
         byte DEST = 2;
-        byte INTERFACE = 3;
+        byte REMOTE_OBJECT = 3;
         byte ACTION = 4;
         byte ERROR_CODE = 5;
         byte REPLY_SERIAL = 6;
@@ -72,8 +73,8 @@ public abstract class Message implements Serializable {
         return (String) headers.get(HeaderField.DEST);
     }
 
-    public String getInterface() {
-        return (String) headers.get(HeaderField.INTERFACE);
+    public RemoteObject getRemoteObejct() {
+        return (RemoteObject) headers.get(HeaderField.REMOTE_OBJECT);
     }
 
     public String getAction() {

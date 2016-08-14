@@ -11,16 +11,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.bilibili.xbus.XBusClient;
+import com.bilibili.xbus.XBus;
+import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
 
-public class MainActivity extends AppCompatActivity implements XBusClient.CallbackHandler {
+public class MainActivity extends AppCompatActivity implements XBus.CallHandler {
 
-    private XBusClient mBus;
+    private XBus mBus;
     private FloatingActionButton mFab;
     private Handler mHandler;
+    private Connection mConn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements XBusClient.Callba
         startXBus();
         startTestService();
 
-        mBus = new XBusClient(this, "main");
+        mBus = new XBus(this, "main");
         mHandler = new Handler();
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
@@ -40,8 +42,11 @@ public class MainActivity extends AppCompatActivity implements XBusClient.Callba
             mFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Message msg = new MethodCall(mBus.getPath(), "test", "hello");
-                    mBus.send(msg);
+                    Connection conn = mConn;
+                    if (conn != null) {
+                        Message msg = new MethodCall(mBus.getPath(), "test", "hello");
+                        conn.send(msg);
+                    }
                 }
             });
         }
@@ -75,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements XBusClient.Callba
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
+        // automatically handleMessage clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
@@ -90,13 +95,18 @@ public class MainActivity extends AppCompatActivity implements XBusClient.Callba
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mBus != null) {
-            mBus.disconnect();
+        if (mConn != null) {
+            mConn.disconnect();
         }
     }
 
     @Override
-    public void handle(final Message msg) {
+    public void onConnect(Connection conn) {
+        mConn = conn;
+    }
+
+    @Override
+    public void handleMessage(final Message msg) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -104,5 +114,10 @@ public class MainActivity extends AppCompatActivity implements XBusClient.Callba
                         .setAction("Action", null).show();
             }
         });
+    }
+
+    @Override
+    public void onDisconnect() {
+        mConn = null;
     }
 }

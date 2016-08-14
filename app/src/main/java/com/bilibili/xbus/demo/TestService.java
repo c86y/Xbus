@@ -6,7 +6,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
-import com.bilibili.xbus.XBusClient;
+import com.bilibili.xbus.XBus;
+import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodReturn;
 
@@ -16,16 +17,17 @@ import com.bilibili.xbus.message.MethodReturn;
  * @author chengyuan
  * @data 16/8/12.
  */
-public class TestService extends Service implements XBusClient.CallbackHandler{
+public class TestService extends Service implements XBus.CallHandler {
 
     private Handler mHandler;
-    private XBusClient mBus;
+    private XBus mBus;
+    private Connection mCoon;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler();
-        mBus = new XBusClient(this, "test");
+        mBus = new XBus(this, "test");
 
         mHandler.postDelayed(new Runnable() {
             @Override
@@ -47,12 +49,25 @@ public class TestService extends Service implements XBusClient.CallbackHandler{
     }
 
     @Override
-    public void handle(final Message msg) {
+    public void onConnect(Connection conn) {
+        mCoon = conn;
+    }
+
+    @Override
+    public void handleMessage(final Message msg) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                mBus.send(new MethodReturn(mBus.getPath(), msg.getSource(), msg.getSerial(), msg.getAction()));
+                Connection conn = mCoon;
+                if (conn != null) {
+                    conn.send(new MethodReturn(mBus.getPath(), msg.getSource(), msg.getSerial(), msg.getAction()));
+                }
             }
         });
+    }
+
+    @Override
+    public void onDisconnect() {
+        mCoon = null;
     }
 }

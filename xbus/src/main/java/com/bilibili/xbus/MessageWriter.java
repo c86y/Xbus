@@ -32,7 +32,7 @@ public class MessageWriter implements Closeable {
                 XBusLog.printStackTrace(e);
             }
 
-            XBusClient.closeQuietly(this);
+            XBus.closeQuietly(this);
         }
     }
 

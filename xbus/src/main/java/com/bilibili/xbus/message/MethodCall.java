@@ -3,6 +3,8 @@ package com.bilibili.xbus.message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.bilibili.xbus.proxy.RemoteObject;
+
 /**
  * MethodCall
  *
@@ -15,7 +17,7 @@ public class MethodCall extends Message {
         this(source, dest, action, null, args);
     }
 
-    public MethodCall(@NonNull String source, @NonNull String dest, @NonNull String action, @Nullable String iface, Object... args) {
+    public MethodCall(@NonNull String source, @NonNull String dest, @NonNull String action, @Nullable RemoteObject remoteObject, Object... args) {
         super(MessageType.METHOD_CALL, args);
         if (source == null || dest == null || action == null) {
             throw new IllegalArgumentException("Must set source, dest, action to MethodCall");
@@ -24,8 +26,8 @@ public class MethodCall extends Message {
         this.headers.put(HeaderField.DEST, dest);
         this.headers.put(HeaderField.ACTION, action);
 
-        if (iface != null) {
-            this.headers.put(HeaderField.INTERFACE, iface);
+        if (remoteObject != null) {
+            this.headers.put(HeaderField.REMOTE_OBJECT, remoteObject);
         }
     }
 }
