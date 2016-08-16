@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBusService;
@@ -20,11 +21,10 @@ import com.bilibili.xbus.proxy.RemoteCallHandler;
 import com.bilibili.xbus.proxy.RemoteInvocation;
 import com.bilibili.xbus.proxy.RemoteObject;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements CallHandler{
 
     private XBus mBus;
     private FloatingActionButton mFab;
-    private Handler mHandler;
     private RemoteCallHandler mRemoteCallHandler;
     private TestInterface mTestInterface;
 
@@ -38,9 +38,8 @@ public class MainActivity extends AppCompatActivity {
         startXBus();
         startTestService();
 
-        mBus = new XBus(this, "main");
-        mHandler = new Handler();
         mRemoteCallHandler = new RemoteCallHandler("test");
+        mBus = new XBus(this, "main", this).registerCallHandler(mRemoteCallHandler);
         mTestInterface = RemoteInvocation.getProxy(TestInterface.class, mRemoteCallHandler);
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
@@ -55,13 +54,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mBus.connect(mRemoteCallHandler);
-            }
-        }, 1000);
-
+        mBus.connect();
     }
 
     private void startXBus() {
@@ -99,5 +92,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    public void onConnected(Connection conn) {
+
+    }
+
+    @Override
+    public void onDisconnected() {
+
+    }
+
+    @Override
+    public void handleMessage(Message msg) {
+
     }
 }

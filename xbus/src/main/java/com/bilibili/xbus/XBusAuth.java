@@ -11,7 +11,6 @@ import android.net.LocalSocket;
  * XBusAuth
  *
  * @author chengyuan
- * @data 16/8/3.
  */
 public interface XBusAuth {
 

@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
  * FastAuth
  *
  * @author chengyuan
- * @data 16/8/5.
  */
 public class FastAuth implements XBusAuth {
 

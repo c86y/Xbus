@@ -4,13 +4,14 @@ import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.utils.XBusLog;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Created by c86y on 2016/8/14.
+ * Connection
+ *
+ * @author chengyuan
  */
 public class Connection {
 
@@ -18,14 +19,14 @@ public class Connection {
 
     private final MessageReader mIn;
     private final MessageWriter mOut;
-    private final XBus.CallHandler mCallHandler;
+    private final CallHandler mCallHandler;
     private final String mPath;
     private final Reader mReader;
     private final Sender mSender;
     private final BlockingQueue<Message> mSendQueue =
             new LinkedBlockingQueue<>();
 
-    public Connection(String path, XBus.CallHandler handler, MessageReader in, MessageWriter out) {
+    public Connection(String path, CallHandler handler, MessageReader in, MessageWriter out) {
         mPath = path;
         mIn = in;
         mOut = out;
@@ -38,7 +39,7 @@ public class Connection {
         mSender.start();
 
         mCallHandler = handler;
-        handler.onConnect(this);
+        handler.onConnected(this);
     }
 
     public String getPath() {
@@ -91,7 +92,7 @@ public class Connection {
                         continue;
                     }
 
-                    XBus.CallHandler handler = mCallHandler;
+                    CallHandler handler = mCallHandler;
                     if (handler != null) {
                         handler.handleMessage(msg);
                     }
@@ -116,9 +117,9 @@ public class Connection {
         mSender.interrupt();
         mReader.interrupt();
 
-        XBus.CallHandler handler = mCallHandler;
+        CallHandler handler = mCallHandler;
         if (handler != null) {
-            handler.onDisconnect();
+            handler.onDisconnected();
         }
     }
 }

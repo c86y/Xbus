@@ -6,7 +6,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
+import com.bilibili.xbus.CallHandler;
+import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBus;
+import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
 
 /**
@@ -15,9 +18,8 @@ import com.bilibili.xbus.proxy.RemoteCallHandler;
  * @author chengyuan
  * @data 16/8/12.
  */
-public class TestService extends Service {
+public class TestService extends Service implements CallHandler{
 
-    private Handler mHandler;
     private XBus mBus;
     private RemoteCallHandler mRemoteCallHandler;
     private TestInterface mTestInterface = new TestInterface() {
@@ -30,17 +32,11 @@ public class TestService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mHandler = new Handler();
-        mBus = new XBus(this, "test");
         mRemoteCallHandler = new RemoteCallHandler("main");
+        mBus = new XBus(this, "test", this).registerCallHandler(mRemoteCallHandler);
         mRemoteCallHandler.registerObject(TestInterface.class, mTestInterface);
 
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mBus.connect(mRemoteCallHandler);
-            }
-        }, 1000);
+        mBus.connect();
     }
 
     @Nullable
@@ -52,5 +48,20 @@ public class TestService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    public void onConnected(Connection conn) {
+
+    }
+
+    @Override
+    public void onDisconnected() {
+
+    }
+
+    @Override
+    public void handleMessage(Message msg) {
+
     }
 }

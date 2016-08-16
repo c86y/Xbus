@@ -4,7 +4,6 @@ package com.bilibili.xbus.message;
  * ErrorCode
  *
  * @author chengyuan
- * @data 16/8/16.
  */
 public interface ErrorCode {
 

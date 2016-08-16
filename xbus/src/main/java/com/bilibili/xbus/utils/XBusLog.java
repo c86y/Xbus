@@ -3,7 +3,7 @@ package com.bilibili.xbus.utils;
 import android.util.Log;
 
 /**
- * Created by c86y on 2016/8/7.
+ * @author chengyuan
  */
 public class XBusLog {
 

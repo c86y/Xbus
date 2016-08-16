@@ -1,7 +1,7 @@
 package com.bilibili.xbus.proxy;
 
+import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.Connection;
-import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.XBusException;
 import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
@@ -21,9 +21,8 @@ import java.util.Set;
  * RemoteCallHandler
  *
  * @author chengyuan
- * @date 16/8/15.
  */
-public class RemoteCallHandler implements XBus.CallHandler {
+public class RemoteCallHandler implements CallHandler {
 
     private String mDest;
     private Connection mConn;
@@ -35,8 +34,12 @@ public class RemoteCallHandler implements XBus.CallHandler {
         mDest = dest;
     }
 
+    public String getDest() {
+        return mDest;
+    }
+
     @Override
-    public void onConnect(Connection conn) {
+    public void onConnected(Connection conn) {
         mConn = conn;
     }
 
@@ -59,7 +62,7 @@ public class RemoteCallHandler implements XBus.CallHandler {
     }
 
     @Override
-    public void onDisconnect() {
+    public void onDisconnected() {
         mConn = null;
     }
 

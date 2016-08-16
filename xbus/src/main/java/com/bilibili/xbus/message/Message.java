@@ -14,7 +14,6 @@ import java.util.HashMap;
  * Message
  *
  * @author chengyuan
- * @data 16/8/3.
  */
 public abstract class Message implements Serializable {
 

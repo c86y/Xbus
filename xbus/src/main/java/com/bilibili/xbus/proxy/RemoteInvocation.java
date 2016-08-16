@@ -8,7 +8,6 @@ import java.lang.reflect.Proxy;
  * RemoteInvocation
  *
  * @author chengyuan
- * @data 16/8/12.
  */
 public class RemoteInvocation implements InvocationHandler {
 

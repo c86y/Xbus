@@ -13,7 +13,6 @@ import android.support.annotation.Nullable;
  * XBusService
  *
  * @author chengyuan
- * @data 16/8/3.
  */
 public class XBusService extends Service{
 

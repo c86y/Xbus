@@ -18,6 +18,7 @@ import com.bilibili.xbus.message.MethodCall;
 import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.MagicMap;
 import com.bilibili.xbus.utils.XBusLog;
+import com.bilibili.xbus.utils.XBusUtils;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -30,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * XBusHost
  *
  * @author chengyuan
- * @data 16/8/3.
  */
 public class
 XBusHost extends Thread {
@@ -46,9 +46,10 @@ XBusHost extends Thread {
     XBusHost(Context context) {
         super(TAG);
         mContext = context.getApplicationContext();
-        mHostPath = XBus.getHostPath(mContext);
+        mHostPath = XBusUtils.getHostPath(mContext);
         mRouter = new XBusRouter();
         mDispatcher = new Dispatcher();
+        setDaemon(true);
     }
 
     void stopRunning() {
@@ -71,9 +72,9 @@ XBusHost extends Thread {
 
         LocalServerSocket lss = null;
         try {
-            lss = new LocalServerSocket(XBus.getHostAddress(mContext));
+            lss = new LocalServerSocket(XBusUtils.getHostAddress(mContext));
             if (XBusLog.ENABLE) {
-                XBusLog.d("XBus daemon is running");
+                XBusLog.d("XBus Host is running");
             }
 
             while (mRunning.get()) {
@@ -281,8 +282,8 @@ XBusHost extends Thread {
         }
 
         private void close() {
-            XBus.closeQuietly(mOut);
-            XBus.closeQuietly(mIn);
+            XBusUtils.closeQuietly(mOut);
+            XBusUtils.closeQuietly(mIn);
             try {
                 socket.close();
             } catch (IOException e) {

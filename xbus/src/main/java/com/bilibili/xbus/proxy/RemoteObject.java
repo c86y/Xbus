@@ -8,7 +8,6 @@ import java.io.Serializable;
  * RemoteObject
  *
  * @author chengyuan
- * @data 16/8/12.
  */
 public class RemoteObject implements Serializable {
 
@@ -30,7 +29,6 @@ public class RemoteObject implements Serializable {
         RemoteObject that = (RemoteObject) o;
 
         return className.equals(that.className);
-
     }
 
     @Override

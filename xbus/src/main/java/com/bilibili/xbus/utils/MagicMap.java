@@ -13,7 +13,6 @@ import java.util.Map;
  * MagicMap
  *
  * @author chengyuan
- * @data 16/8/4.
  */
 public class MagicMap<A, B> {
     private Map<A, LinkedList<B>> m;

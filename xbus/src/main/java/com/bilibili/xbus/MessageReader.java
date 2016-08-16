@@ -6,6 +6,7 @@ package com.bilibili.xbus;
 
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.utils.XBusLog;
+import com.bilibili.xbus.utils.XBusUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -16,7 +17,6 @@ import java.io.ObjectInputStream;
  * MessageReceiver
  *
  * @author chengyuan
- * @data 16/8/3.
  */
 public class MessageReader implements Closeable {
 
@@ -32,7 +32,7 @@ public class MessageReader implements Closeable {
                 XBusLog.printStackTrace(e);
             }
 
-            XBus.closeQuietly(this);
+            XBusUtils.closeQuietly(this);
         }
     }
 

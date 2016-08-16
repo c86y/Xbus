@@ -6,7 +6,6 @@ import android.support.annotation.NonNull;
  * MethodReturn
  *
  * @author chengyuan
- * @data 16/8/8.
  */
 public class MethodReturn extends Message {
 

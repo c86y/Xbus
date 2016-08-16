@@ -9,7 +9,6 @@ import com.bilibili.xbus.proxy.RemoteObject;
  * MethodCall
  *
  * @author chengyuan
- * @data 16/8/8.
  */
 public class MethodCall extends Message {
 

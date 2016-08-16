@@ -10,7 +10,6 @@ import java.io.IOException;
  * XBusException
  *
  * @author chengyuan
- * @data 16/8/5.
  */
 public class XBusException extends IOException {
 
