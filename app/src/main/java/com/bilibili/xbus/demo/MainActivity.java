@@ -2,7 +2,6 @@ package com.bilibili.xbus.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -12,14 +11,12 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.bilibili.xbus.CallHandler;
-import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.Connection;
+import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
-import com.bilibili.xbus.message.MethodCall;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
 import com.bilibili.xbus.proxy.RemoteInvocation;
-import com.bilibili.xbus.proxy.RemoteObject;
 
 public class MainActivity extends AppCompatActivity implements CallHandler{
 

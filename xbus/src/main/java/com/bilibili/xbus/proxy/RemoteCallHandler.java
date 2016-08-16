@@ -11,11 +11,11 @@ import com.bilibili.xbus.utils.XBusLog;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RemoteCallHandler
@@ -27,8 +27,8 @@ public class RemoteCallHandler implements CallHandler {
     private String mDest;
     private Connection mConn;
     private final List<MethodReturn> mMethodReturns = new LinkedList<MethodReturn>();
-    private final Map<RemoteObject, Object> mRemoteObjectProxyMap = new HashMap<>();
-    private final Map<RemoteObject, Object> mLocalObjects = new HashMap<>();
+    private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectProxyMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectImplMap = new ConcurrentHashMap<>();
 
     public RemoteCallHandler(String dest) {
         mDest = dest;
@@ -68,7 +68,7 @@ public class RemoteCallHandler implements CallHandler {
 
     public void registerObject(Class cInterface, Object impl) {
         RemoteObject remoteObject = new RemoteObject(cInterface.getName());
-        mLocalObjects.put(remoteObject, impl);
+        mRemoteObjectImplMap.put(remoteObject, impl);
     }
 
     final synchronized Object remoteInvoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
@@ -107,7 +107,7 @@ public class RemoteCallHandler implements CallHandler {
                     }
                 }
             }
-        } while (methodReturn == null);
+        } while (methodReturn == null && mConn != null);
 
         if (methodReturn.getErrorCode() != ErrorCode.SUCCESS) {
             throw new XBusException(methodReturn.getErrorCode(), methodReturn.getErrorMsg(), (Throwable) methodReturn.getReturnValue());
@@ -120,7 +120,7 @@ public class RemoteCallHandler implements CallHandler {
         MethodReturn methodReturn;
 
         RemoteObject remoteObject = methodCall.getRemoteObject();
-        Object impl = mLocalObjects.get(remoteObject);
+        Object impl = mRemoteObjectImplMap.get(remoteObject);
         if (impl == null) {
             methodReturn = new MethodReturn(methodCall.getDest(), methodCall.getSource(), methodCall.getSerial(), ErrorCode.E_CLASS_NOT_FOUND,
                     String.format("Class %s doesn't have implementation", remoteObject.getClassName()));

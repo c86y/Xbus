@@ -1,2 +1,2 @@
 # Xbus
-Xbus is a eventbus cross multi process
+Xbus is one eventbus across multi-process
