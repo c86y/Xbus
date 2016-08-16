@@ -13,6 +13,9 @@ import java.io.IOException;
  * @data 16/8/5.
  */
 public class XBusException extends IOException {
+
+    private int mErrorCode;
+
     public XBusException() {
     }
 
@@ -20,11 +23,17 @@ public class XBusException extends IOException {
         super(detailMessage);
     }
 
-    public XBusException(String message, Throwable cause) {
+    public XBusException(int errorCode, String message, Throwable cause) {
         super(message, cause);
+        mErrorCode = errorCode;
     }
 
-    public XBusException(Throwable cause) {
+    public XBusException(int errorCode, Throwable cause) {
         super(cause);
+        mErrorCode = errorCode;
+    }
+
+    public int getErrorCode() {
+        return mErrorCode;
     }
 }

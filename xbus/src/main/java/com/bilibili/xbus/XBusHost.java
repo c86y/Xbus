@@ -12,9 +12,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Pair;
 
-import com.bilibili.xbus.message.Error;
+import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
+import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.MagicMap;
 import com.bilibili.xbus.utils.XBusLog;
 
@@ -306,18 +307,23 @@ XBusHost extends Thread {
                     case STATE_HANDSHAKE_WAIT:
                         msg = in.read();
                         if (msg == null) {
-                            throw new XBusException("handshake failed when state = " + state);
+                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                         }
 
                         if (msg.getType() != Message.MessageType.METHOD_RETURN) {
-                            out.write(new Error(mHostPath, XBus.PATH_UNKNOWN, Error.ErrorCode.E_INVALID_MSG_TYPE, msg.getSerial()));
-                            throw new XBusException("handshake failed when state = " + state);
+                            out.write(new MethodReturn(mHostPath, XBus.PATH_UNKNOWN, msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
+                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                         }
 
-                        Object[] args = msg.getArgs();
+                        MethodReturn methodReturn = (MethodReturn) msg;
+                        if (methodReturn.getErrorCode() != ErrorCode.SUCCESS) {
+                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
+                        }
+
+                        Object[] args = methodReturn.getArgs();
                         if (args == null || args.length == 0) {
-                            out.write(new Error(mHostPath, XBus.PATH_UNKNOWN, Error.ErrorCode.E_INVALID_MSG_ARGS, msg.getSerial()));
-                            throw new XBusException("handshake failed when state = " + state);
+                            out.write(new MethodReturn(mHostPath, XBus.PATH_UNKNOWN, methodReturn.getSerial(), ErrorCode.E_INVALID_MSG_ARGS));
+                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                         }
 
                         remotePath = (String) args[0];
@@ -336,7 +342,7 @@ XBusHost extends Thread {
                 mRouter.addConnection(this);
 
                 if (XBusLog.ENABLE) {
-                    XBusLog.d("Connection " + remotePath + "handshake success");
+                    XBusLog.d("Connection " + remotePath + " handshake success");
                 }
 
                 Message msg;

@@ -7,9 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import com.bilibili.xbus.XBus;
-import com.bilibili.xbus.Connection;
-import com.bilibili.xbus.message.Message;
-import com.bilibili.xbus.message.MethodReturn;
+import com.bilibili.xbus.proxy.RemoteCallHandler;
 
 /**
  * TestService
@@ -17,22 +15,30 @@ import com.bilibili.xbus.message.MethodReturn;
  * @author chengyuan
  * @data 16/8/12.
  */
-public class TestService extends Service implements XBus.CallHandler {
+public class TestService extends Service {
 
     private Handler mHandler;
     private XBus mBus;
-    private Connection mCoon;
+    private RemoteCallHandler mRemoteCallHandler;
+    private TestInterface mTestInterface = new TestInterface() {
+        @Override
+        public String talk(String str) {
+            return "echo " + str;
+        }
+    };
 
     @Override
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler();
         mBus = new XBus(this, "test");
+        mRemoteCallHandler = new RemoteCallHandler("main");
+        mRemoteCallHandler.registerObject(TestInterface.class, mTestInterface);
 
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mBus.connect(TestService.this);
+                mBus.connect(mRemoteCallHandler);
             }
         }, 1000);
     }
@@ -46,28 +52,5 @@ public class TestService extends Service implements XBus.CallHandler {
     @Override
     public void onDestroy() {
         super.onDestroy();
-    }
-
-    @Override
-    public void onConnect(Connection conn) {
-        mCoon = conn;
-    }
-
-    @Override
-    public void handleMessage(final Message msg) {
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Connection conn = mCoon;
-                if (conn != null) {
-                    conn.send(new MethodReturn(mBus.getPath(), msg.getSource(), msg.getSerial(), msg.getAction()));
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onDisconnect() {
-        mCoon = null;
     }
 }

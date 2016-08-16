@@ -19,21 +19,30 @@ public class Connection {
     private final MessageReader mIn;
     private final MessageWriter mOut;
     private final XBus.CallHandler mCallHandler;
+    private final String mPath;
     private final Reader mReader;
     private final Sender mSender;
     private final BlockingQueue<Message> mSendQueue =
             new LinkedBlockingQueue<>();
 
     public Connection(String path, XBus.CallHandler handler, MessageReader in, MessageWriter out) {
+        mPath = path;
         mIn = in;
         mOut = out;
         mReader = new Reader(path);
         mSender = new Sender(path);
+
+        mRunning.set(true);
+
         mReader.start();
         mSender.start();
 
         mCallHandler = handler;
         handler.onConnect(this);
+    }
+
+    public String getPath() {
+        return mPath;
     }
 
     private class Sender extends Thread {
@@ -111,9 +120,5 @@ public class Connection {
         if (handler != null) {
             handler.onDisconnect();
         }
-    }
-
-    public final synchronized Object remoteInvocation(final Object proxy, final Method method, final Object[] args) throws Throwable {
-
     }
 }

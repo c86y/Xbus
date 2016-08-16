@@ -1,7 +1,5 @@
 package com.bilibili.xbus.proxy;
 
-import com.bilibili.xbus.Connection;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -14,19 +12,23 @@ import java.lang.reflect.Proxy;
  */
 public class RemoteInvocation implements InvocationHandler {
 
-    private final Connection mConn;
+    private final RemoteCallHandler mRemoteCallHandler;
 
-    public RemoteInvocation(Connection conn) {
-        mConn = conn;
+    private RemoteInvocation(RemoteCallHandler remoteCallHandler) {
+        mRemoteCallHandler = remoteCallHandler;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return mConn.remoteInvocation(proxy, method, args);
+        return mRemoteCallHandler.remoteInvoke(proxy, method, args);
     }
 
-    public static Object buildProxy(RemoteObject remoteObject, Connection conn) throws ClassNotFoundException {
+    public static <T> T getProxy(Class<T> clazz, RemoteCallHandler remoteCallHandler) {
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new RemoteInvocation(remoteCallHandler));
+    }
+
+    static <T> T buildProxy(RemoteObject remoteObject, RemoteCallHandler remoteCallHandler) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(remoteObject.getClassName());
-        return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new RemoteInvocation(conn));
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new RemoteInvocation(remoteCallHandler));
     }
 }

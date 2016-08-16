@@ -23,7 +23,6 @@ public abstract class Message implements Serializable {
     public interface MessageType {
         byte METHOD_CALL = 1;
         byte METHOD_RETURN = 2;
-        byte ERROR = 3;
     }
 
     public interface HeaderField {
@@ -31,8 +30,9 @@ public abstract class Message implements Serializable {
         byte DEST = 2;
         byte REMOTE_OBJECT = 3;
         byte ACTION = 4;
-        byte ERROR_CODE = 5;
-        byte REPLY_SERIAL = 6;
+        byte REPLY_SERIAL = 5;
+        byte ERROR_CODE = 6;
+        byte ERROR_MSG = 7;
     }
 
     protected final long serial;
@@ -73,16 +73,12 @@ public abstract class Message implements Serializable {
         return (String) headers.get(HeaderField.DEST);
     }
 
-    public RemoteObject getRemoteObejct() {
+    public RemoteObject getRemoteObject() {
         return (RemoteObject) headers.get(HeaderField.REMOTE_OBJECT);
     }
 
     public String getAction() {
         return (String) headers.get(HeaderField.ACTION);
-    }
-
-    public void setArgs(Object[] args) {
-        this.args = args;
     }
 
     public Object[] getArgs() {

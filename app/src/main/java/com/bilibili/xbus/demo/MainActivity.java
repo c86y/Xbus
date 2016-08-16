@@ -16,13 +16,17 @@ import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
+import com.bilibili.xbus.proxy.RemoteCallHandler;
+import com.bilibili.xbus.proxy.RemoteInvocation;
+import com.bilibili.xbus.proxy.RemoteObject;
 
-public class MainActivity extends AppCompatActivity implements XBus.CallHandler {
+public class MainActivity extends AppCompatActivity {
 
     private XBus mBus;
     private FloatingActionButton mFab;
     private Handler mHandler;
-    private Connection mConn;
+    private RemoteCallHandler mRemoteCallHandler;
+    private TestInterface mTestInterface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,17 +40,17 @@ public class MainActivity extends AppCompatActivity implements XBus.CallHandler 
 
         mBus = new XBus(this, "main");
         mHandler = new Handler();
+        mRemoteCallHandler = new RemoteCallHandler("test");
+        mTestInterface = RemoteInvocation.getProxy(TestInterface.class, mRemoteCallHandler);
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         if (mFab != null) {
             mFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Connection conn = mConn;
-                    if (conn != null) {
-                        Message msg = new MethodCall(mBus.getPath(), "test", "hello");
-                        conn.send(msg);
-                    }
+                    String echo = mTestInterface.talk("hello world");
+                    Snackbar.make(mFab, "Read msg: " + echo, Snackbar.LENGTH_SHORT)
+                            .setAction("Action", null).show();
                 }
             });
         }
@@ -54,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements XBus.CallHandler 
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mBus.connect(MainActivity.this);
+                mBus.connect(mRemoteCallHandler);
             }
         }, 1000);
 
@@ -95,29 +99,5 @@ public class MainActivity extends AppCompatActivity implements XBus.CallHandler 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mConn != null) {
-            mConn.disconnect();
-        }
-    }
-
-    @Override
-    public void onConnect(Connection conn) {
-        mConn = conn;
-    }
-
-    @Override
-    public void handleMessage(final Message msg) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Snackbar.make(mFab, "Read msg: " + msg, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
-
-    @Override
-    public void onDisconnect() {
-        mConn = null;
     }
 }

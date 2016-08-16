@@ -9,7 +9,7 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.os.Debug;
 
-import com.bilibili.xbus.message.Error;
+import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.XBusLog;
@@ -69,6 +69,10 @@ public class XBus {
 
     public static String getHostAddress(Context context) {
         return context.getPackageName() + HOST_SOCKET_NAME;
+    }
+
+    public void connect() {
+
     }
 
     public void connect(final CallHandler handler) {
@@ -136,44 +140,44 @@ public class XBus {
                 case STATE_HANDSHAKE_INIT:
                     msg = in.read();
                     if (msg == null) {
-                        out.write(new Error(mPath, XBus.getHostPath(mContext), Error.ErrorCode.E_READ_MSG, -1));
-                        throw new XBusException("handshake failed when state = " + state);
+                        out.write(new MethodReturn(mPath, XBus.getHostPath(mContext), -1, ErrorCode.E_READ_MSG));
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (!XBus.getHostPath(mContext).equals(msg.getSource())) {
-                        out.write(new Error(mPath, XBus.getHostPath(mContext), Error.ErrorCode.E_INVALID_MSG_SOURCE, msg.getSerial()));
-                        throw new XBusException("handshake failed when state = " + state);
+                        out.write(new MethodReturn(mPath, XBus.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_SOURCE));
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (msg.getType() != Message.MessageType.METHOD_CALL) {
-                        out.write(new Error(mPath,XBus.getHostPath(mContext), Error.ErrorCode.E_INVALID_MSG_TYPE, msg.getSerial()));
-                        throw new XBusException("handshake failed when state = " + state);
+                        out.write(new MethodReturn(mPath,XBus.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (!METHOD_REQUEST_NAME.equals(msg.getAction())) {
-                        out.write(new Error(mPath, XBus.getHostPath(mContext), Error.ErrorCode.E_INVALID_MSG_ACTION, msg.getSerial()));
-                        throw new XBusException("handshake failed when state = " + state);
+                        out.write(new MethodReturn(mPath, XBus.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_ACTION));
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
-                    out.write(new MethodReturn(mPath, XBus.getHostPath(mContext), msg.getSerial(), getPath()));
+                    out.write(new MethodReturn(mPath, XBus.getHostPath(mContext), msg.getSerial()).setReturnValue(getPath()));
                     state = STATE_HANDSHAKE_WAIT;
                     break;
                 case STATE_HANDSHAKE_WAIT:
                     msg = in.read();
                     if (msg == null) {
-                        throw new XBusException("handshake failed when state = " + state);
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (!XBus.getHostPath(mContext).equals(msg.getSource())) {
-                        throw new XBusException("handshake failed when state = " + state);
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (msg.getType() != Message.MessageType.METHOD_CALL) {
-                        throw new XBusException("handshake failed when state = " + state);
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (!METHOD_ACCEPT.equals(msg.getAction())) {
-                        throw new XBusException("handshake failed when state = " + state);
+                        throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     state = STATE_HANDSHAKE_OK;
