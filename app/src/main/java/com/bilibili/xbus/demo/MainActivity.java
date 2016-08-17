@@ -2,13 +2,15 @@ package com.bilibili.xbus.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
 
 import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.Connection;
@@ -18,10 +20,10 @@ import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
 import com.bilibili.xbus.proxy.RemoteInvocation;
 
-public class MainActivity extends AppCompatActivity implements CallHandler{
+public class MainActivity extends AppCompatActivity implements CallHandler {
 
     private XBus mBus;
-    private FloatingActionButton mFab;
+    private Button btn1;
     private RemoteCallHandler mRemoteCallHandler;
     private TestInterface mTestInterface;
 
@@ -39,14 +41,13 @@ public class MainActivity extends AppCompatActivity implements CallHandler{
         mBus = new XBus(this, "main", this).registerCallHandler(mRemoteCallHandler);
         mTestInterface = RemoteInvocation.getProxy(TestInterface.class, mRemoteCallHandler);
 
-        mFab = (FloatingActionButton) findViewById(R.id.fab);
-        if (mFab != null) {
-            mFab.setOnClickListener(new View.OnClickListener() {
+        btn1 = (Button) findViewById(R.id.btn1);
+        if (btn1 != null) {
+            btn1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     String echo = mTestInterface.talk("hello world");
-                    Snackbar.make(mFab, "Read msg: " + echo, Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
+                    toast("Read msg: " + echo);
                 }
             });
         }
@@ -62,6 +63,11 @@ public class MainActivity extends AppCompatActivity implements CallHandler{
     private void startTestService() {
         Intent intent = new Intent(this, TestService.class);
         startService(intent);
+    }
+
+    protected void toast(String msg) {
+        if (TextUtils.isEmpty(msg)) return;
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
     @Override
