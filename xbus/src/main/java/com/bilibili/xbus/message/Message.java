@@ -5,6 +5,7 @@
 package com.bilibili.xbus.message;
 
 import com.bilibili.xbus.proxy.RemoteObject;
+import com.bilibili.xbus.utils.StopWatch;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -38,6 +39,7 @@ public abstract class Message implements Serializable {
     protected final byte type;
     protected HashMap<Byte, Object> headers;
     protected Object[] args;
+    protected StopWatch stopWatch;
 
     public Message(byte type, Object... args) {
         this(type, new HashMap<Byte, Object>(), args);
@@ -82,6 +84,14 @@ public abstract class Message implements Serializable {
 
     public Object[] getArgs() {
         return args;
+    }
+
+    public StopWatch getStopWatch() {
+        return stopWatch;
+    }
+
+    public void setStopWatch(StopWatch stopWatch) {
+        this.stopWatch = stopWatch;
     }
 
     @Override

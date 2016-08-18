@@ -25,7 +25,7 @@ import java.io.IOException;
  */
 public class XBus {
 
-    static final boolean DEBUG = BuildConfig.DEBUG;
+    static final boolean DEBUG = false;
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
 

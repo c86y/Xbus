@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        startXBus();
+        XBusService.startService(this);
         startTestService();
 
         mRemoteCallHandler = new RemoteCallHandler("test");
@@ -53,11 +53,6 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
         }
 
         mBus.connect();
-    }
-
-    private void startXBus() {
-        Intent intent = new Intent(this, XBusService.class);
-        startService(intent);
     }
 
     private void startTestService() {
