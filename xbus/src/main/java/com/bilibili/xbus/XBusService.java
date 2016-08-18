@@ -5,6 +5,7 @@
 package com.bilibili.xbus;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -14,7 +15,12 @@ import android.support.annotation.Nullable;
  *
  * @author chengyuan
  */
-public class XBusService extends Service{
+public class XBusService extends Service {
+
+    public static void startService(Context context) {
+        Intent intent = new Intent(context, XBusService.class);
+        context.startService(intent);
+    }
 
     private XBusHost mXBusHost;
 

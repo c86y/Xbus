@@ -2,12 +2,14 @@ package com.bilibili.xbus.utils;
 
 import android.util.Log;
 
+import com.bilibili.xbus.BuildConfig;
+
 /**
  * @author chengyuan
  */
 public class XBusLog {
 
-    public static final boolean ENABLE = true;
+    public static final boolean ENABLE = BuildConfig.DEBUG;
 
     private static final String TAG = "XBus";
 

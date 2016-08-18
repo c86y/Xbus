@@ -7,6 +7,7 @@ import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
 import com.bilibili.xbus.message.MethodReturn;
+import com.bilibili.xbus.utils.StopWatch;
 import com.bilibili.xbus.utils.XBusLog;
 
 import java.lang.reflect.InvocationTargetException;
@@ -77,16 +78,22 @@ public class RemoteCallHandler implements CallHandler {
             throw new XBusException("Connection is disconnected");
         }
 
+        // TODO: 16/8/18  deal with stop watch for better performance
+        StopWatch stopWatch = new StopWatch().start(method.getName());
+
         RemoteObject remoteObject = getRemoteObjectFromProxy(proxy);
         if (remoteObject == null) {
             remoteObject = new RemoteObject(proxy.getClass().getInterfaces()[0].getName());
         }
+        stopWatch.split("get remote object");
 
         String action = method.getName();
 
         MethodCall methodCall = new MethodCall(conn.getPath(), mDest, action, remoteObject, args);
         long id = methodCall.getSerial();
+        methodCall.setStopWatch(stopWatch);
         conn.send(methodCall);
+        stopWatch.split("send call");
 
         MethodReturn methodReturn = null;
         do {
@@ -99,9 +106,11 @@ public class RemoteCallHandler implements CallHandler {
                 }
 
                 if (methodReturn != null) {
+                    stopWatch.split("send return");
                     mMethodReturns.remove(methodReturn);
                 } else {
                     try {
+                        stopWatch.split("send wait");
                         mMethodReturns.wait();
                     } catch (InterruptedException ignored) {
                     }
@@ -113,6 +122,7 @@ public class RemoteCallHandler implements CallHandler {
             throw new XBusException(methodReturn.getErrorCode(), methodReturn.getErrorMsg(), (Throwable) methodReturn.getReturnValue());
         }
 
+        XBusLog.d("invoke consumed : " + stopWatch.end("call end"));
         return methodReturn.getReturnValue();
     }
 

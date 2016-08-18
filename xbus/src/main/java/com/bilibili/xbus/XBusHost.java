@@ -32,8 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author chengyuan
  */
-public class
-XBusHost extends Thread {
+public class XBusHost extends Thread {
 
     private static final String TAG = "XBusHost";
 
@@ -143,9 +142,15 @@ XBusHost extends Thread {
 
     class XBusRouter extends Thread {
 
+        private static final String TAG = "XBusRouter";
+
         private final Map<String, Connection> mConns = new HashMap<>();
         private final MagicMap<Message, WeakReference<Connection>> mInQueue = new MagicMap<>();
         private final MagicMap<Message, WeakReference<Connection>> mOutQueue = new MagicMap<>();
+
+        public XBusRouter() {
+            super(TAG);
+        }
 
         void addConnection(Connection conn) {
             synchronized (mConns) {
@@ -242,6 +247,8 @@ XBusHost extends Thread {
 
     class Connection extends Thread {
 
+        public static final String TAG = "Connection";
+
         public static final byte STATE_HANDSHAKE_INIT = 0;
         public static final byte STATE_HANDSHAKE_WAIT = 1;
         public static final byte STATE_HANDSHAKE_OK = 2;
@@ -255,7 +262,7 @@ XBusHost extends Thread {
         private MessageWriter mOut;
 
         public Connection(LocalSocket socket) {
-            super("Connection");
+            super(TAG);
             this.socket = socket;
             try {
                 this.mIn = new MessageReader(mHostPath, socket.getInputStream());

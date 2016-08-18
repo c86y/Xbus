@@ -5,6 +5,8 @@
 apply plugin: 'com.android.library'
 
 android {
+    publishNonDefault true
+    useLibrary 'org.apache.http.legacy'
     compileSdkVersion rootProject.ext.targetSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
 
