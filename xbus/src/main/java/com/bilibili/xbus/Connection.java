@@ -54,10 +54,11 @@ public class Connection {
 
         @Override
         public void run() {
-            while (mRunning.get()) {
+            while (mRunning.get() && !isInterrupted()) {
                 Message msg = null;
                 try {
                     msg = mSendQueue.take();
+                    msg.getStopWatch().split("call take");
                 } catch (InterruptedException e) {
                     if (!mRunning.get()) {
                         return;
@@ -85,7 +86,7 @@ public class Connection {
 
         @Override
         public void run() {
-            while (mRunning.get()) {
+            while (mRunning.get() && !isInterrupted()) {
                 try {
                     Message msg = mIn.read();
                     if (msg == null) {
@@ -108,6 +109,7 @@ public class Connection {
     }
 
     public void send(Message msg) {
+        msg.getStopWatch().split("call in-queue");
         mSendQueue.add(msg);
     }
 

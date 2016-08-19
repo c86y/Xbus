@@ -92,12 +92,10 @@ public class RemoteCallHandler implements CallHandler {
         long id = methodCall.getSerial();
 
         // TODO: 16/8/18  deal with stop watch for better performance
-        StopWatch stopWatch = new StopWatch().start(method.getName() + " " + id);
-        stopWatch.split("create call");
+        StopWatch stopWatch = new StopWatch().start(method.getName() + " " + id).split("create call");
         methodCall.setStopWatch(stopWatch);
 
         conn.send(methodCall);
-        stopWatch.split("send call");
 
         MethodReturn methodReturn = null;
         do {

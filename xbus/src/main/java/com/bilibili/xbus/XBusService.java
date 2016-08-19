@@ -22,6 +22,11 @@ public class XBusService extends Service {
         context.startService(intent);
     }
 
+    public static void stopService(Context context) {
+        Intent intent = new Intent(context, XBusService.class);
+        context.stopService(intent);
+    }
+
     private XBusHost mXBusHost;
 
     @Override
@@ -32,10 +37,9 @@ public class XBusService extends Service {
         mXBusHost.start();
     }
 
-    @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        throw new RuntimeException("XBusService do not support bindService");
     }
 
     @Override

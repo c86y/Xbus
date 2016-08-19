@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        XBusService.stopService(this);
     }
 
     @Override

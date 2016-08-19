@@ -33,23 +33,28 @@ public class XBusHost extends Thread {
 
     private static final String TAG = "XBusHost";
 
+    private final String mHostPath;
+    private final XBusAuth mXBusAuth;
+
     private Context mContext;
     private XBusRouter mRouter;
     private Dispatcher mDispatcher;
-    private final String mHostPath;
-    private final XBusAuth mXBusAuth = new FastAuth();
-
+    private AtomicBoolean mRunning = new AtomicBoolean(false);
 
     XBusHost(Context context) {
         super(TAG);
         mContext = context.getApplicationContext();
         mHostPath = XBusUtils.getHostPath(mContext);
+        mXBusAuth = new FastAuth();
         mRouter = new XBusRouter();
         mDispatcher = new Dispatcher();
         setDaemon(true);
     }
 
     void stopRunning() {
+        if (XBusLog.ENABLE) {
+            XBusLog.d("XBusHost is stopped");
+        }
         mRunning.set(false);
     }
 
@@ -88,7 +93,7 @@ public class XBusHost extends Thread {
                     continue;
                 }
 
-                new Connection(ls).start();
+                new HostConnection(ls).start();
             }
         } catch (IOException e) {
             if (XBusLog.ENABLE) {
@@ -109,7 +114,7 @@ public class XBusHost extends Thread {
 
     class Dispatcher extends Thread {
 
-        private static final String TAG = "Dispatcher";
+        private static final String TAG = "Host#Dispatcher";
 
         Dispatcher() {
             super(TAG);
@@ -118,14 +123,14 @@ public class XBusHost extends Thread {
         @Override
         public void run() {
             while (mRunning.get()) {
-                Pair<Message, List<WeakReference<Connection>>> pair = mRouter.pollOut();
+                Pair<Message, List<WeakReference<HostConnection>>> pair = mRouter.pollOut();
 
                 Message msg = pair.first;
-                List<WeakReference<Connection>> wcs = pair.second;
+                List<WeakReference<HostConnection>> wcs = pair.second;
 
                 if (wcs != null) {
-                    for (WeakReference<Connection> wp : wcs) {
-                        Connection conn = wp.get();
+                    for (WeakReference<HostConnection> wp : wcs) {
+                        HostConnection conn = wp.get();
 
                         if (conn == null) {
                             continue;
@@ -136,40 +141,41 @@ public class XBusHost extends Thread {
                 }
             }
         }
+
     }
 
     class XBusRouter extends Thread {
 
-        private static final String TAG = "XBusRouter";
+        private static final String TAG = "Host#Router";
+        private final Map<String, HostConnection> mConns = new HashMap<>();
+        private final MagicMap<Message, WeakReference<HostConnection>> mInQueue = new MagicMap<>();
 
-        private final Map<String, Connection> mConns = new HashMap<>();
-        private final MagicMap<Message, WeakReference<Connection>> mInQueue = new MagicMap<>();
-        private final MagicMap<Message, WeakReference<Connection>> mOutQueue = new MagicMap<>();
+        private final MagicMap<Message, WeakReference<HostConnection>> mOutQueue = new MagicMap<>();
 
         public XBusRouter() {
             super(TAG);
         }
 
-        void addConnection(Connection conn) {
+        void addConnection(HostConnection conn) {
             synchronized (mConns) {
                 mConns.put(conn.clientPath, conn);
             }
         }
 
-        void removeConnection(Connection conn) {
+        void removeConnection(HostConnection conn) {
             synchronized (mConns) {
                 mConns.remove(conn.clientPath);
             }
         }
 
-        void offerIn(Message msg, Connection conn) {
+        void offerIn(Message msg, HostConnection conn) {
             synchronized (mInQueue) {
                 mInQueue.putLast(msg, new WeakReference<>(conn));
                 mInQueue.notifyAll();
             }
         }
 
-        private void offerOut(Message msg, Connection conn) {
+        private void offerOut(Message msg, HostConnection conn) {
             synchronized (mOutQueue) {
                 mOutQueue.putLast(msg, new WeakReference<>(conn));
                 mOutQueue.notifyAll();
@@ -178,9 +184,9 @@ public class XBusHost extends Thread {
 
         @WorkerThread
         @NonNull
-        private Pair<Message, List<WeakReference<Connection>>> pollIn() {
+        private Pair<Message, List<WeakReference<HostConnection>>> pollIn() {
             Message msg;
-            List<WeakReference<Connection>> wcs;
+            List<WeakReference<HostConnection>> wcs;
             synchronized (mInQueue) {
                 try {
                     while (mInQueue.size() == 0) {
@@ -198,9 +204,9 @@ public class XBusHost extends Thread {
 
         @WorkerThread
         @NonNull
-        Pair<Message, List<WeakReference<Connection>>> pollOut() {
+        Pair<Message, List<WeakReference<HostConnection>>> pollOut() {
             Message msg;
-            List<WeakReference<Connection>> wcs;
+            List<WeakReference<HostConnection>> wcs;
 
             synchronized (mOutQueue) {
                 try {
@@ -220,16 +226,16 @@ public class XBusHost extends Thread {
         @Override
         public void run() {
             while (mRunning.get()) {
-                Pair<Message, List<WeakReference<Connection>>> pair = pollIn();
+                Pair<Message, List<WeakReference<HostConnection>>> pair = pollIn();
                 Message msg = pair.first;
-                List<WeakReference<Connection>> wcs = pair.second;
+                List<WeakReference<HostConnection>> wcs = pair.second;
 
                 if (wcs == null) {
                     continue;
                 }
 
-                for (WeakReference<Connection> wp : wcs) {
-                    Connection conn = wp.get();
+                for (WeakReference<HostConnection> wp : wcs) {
+                    HostConnection conn = wp.get();
 
                     if (conn == null) {
                         continue;
@@ -239,13 +245,12 @@ public class XBusHost extends Thread {
                 }
             }
         }
+
     }
 
-    private AtomicBoolean mRunning = new AtomicBoolean(false);
+    class HostConnection extends Thread {
 
-    class Connection extends Thread {
-
-        public static final String TAG = "Connection";
+        public static final String TAG = "Host#Connection";
 
         String clientPath;
         LocalSocket socket;
@@ -253,7 +258,7 @@ public class XBusHost extends Thread {
         private MessageWriter mOut;
         private final XBusHandshake handshake;
 
-        public Connection(LocalSocket socket) {
+        public HostConnection(LocalSocket socket) {
             super(TAG);
             this.socket = socket;
             handshake = XBusHandshakeImpl.instance(mContext);
@@ -317,7 +322,7 @@ public class XBusHost extends Thread {
                     }
 
                     String dest = msg.getDest();
-                    Connection conn = mRouter.mConns.get(dest);
+                    HostConnection conn = mRouter.mConns.get(dest);
                     mRouter.offerIn(msg, conn);
                 }
             } catch (IOException e) {
