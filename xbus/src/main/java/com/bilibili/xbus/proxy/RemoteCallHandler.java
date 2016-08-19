@@ -12,8 +12,7 @@ import com.bilibili.xbus.utils.XBusLog;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +26,7 @@ public class RemoteCallHandler implements CallHandler {
 
     private String mDest;
     private Connection mConn;
-    private final List<MethodReturn> mMethodReturns = new LinkedList<MethodReturn>();
+    private final Map<Long, MethodReturn> mMethodReturns = new HashMap<>();
     private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectProxyMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectImplMap = new ConcurrentHashMap<>();
 
@@ -49,14 +48,19 @@ public class RemoteCallHandler implements CallHandler {
         if (msg == null) {
             return;
         }
-
         if (msg instanceof MethodCall) {
+            // receive invoke request from remote
+            StopWatch stopWatch = msg.getStopWatch().split("remote invoke");
             MethodReturn methodReturn;
             methodReturn = delegateCall((MethodCall) msg);
+            methodReturn.setStopWatch(stopWatch.split("invoke end"));
             mConn.send(methodReturn);
         } else if (msg instanceof MethodReturn) {
+            // receive invoke result from remote
+            msg.getStopWatch().split("receive call result");
             synchronized (mMethodReturns) {
-                mMethodReturns.add((MethodReturn) msg);
+                msg.getStopWatch().split("syn in-list");
+                mMethodReturns.put(msg.getSerial(), (MethodReturn) msg);
                 mMethodReturns.notifyAll();
             }
         }
@@ -78,36 +82,31 @@ public class RemoteCallHandler implements CallHandler {
             throw new XBusException("Connection is disconnected");
         }
 
-        // TODO: 16/8/18  deal with stop watch for better performance
-        StopWatch stopWatch = new StopWatch().start(method.getName());
-
         RemoteObject remoteObject = getRemoteObjectFromProxy(proxy);
         if (remoteObject == null) {
             remoteObject = new RemoteObject(proxy.getClass().getInterfaces()[0].getName());
         }
-        stopWatch.split("get remote object");
 
         String action = method.getName();
-
         MethodCall methodCall = new MethodCall(conn.getPath(), mDest, action, remoteObject, args);
         long id = methodCall.getSerial();
+
+        // TODO: 16/8/18  deal with stop watch for better performance
+        StopWatch stopWatch = new StopWatch().start(method.getName() + " " + id);
+        stopWatch.split("create call");
         methodCall.setStopWatch(stopWatch);
+
         conn.send(methodCall);
         stopWatch.split("send call");
 
         MethodReturn methodReturn = null;
         do {
             synchronized (mMethodReturns) {
-                for (MethodReturn ret : mMethodReturns) {
-                    if (id == ret.getSerial()) {
-                        methodReturn = ret;
-                        break;
-                    }
-                }
-
+                methodReturn = mMethodReturns.get(id);
                 if (methodReturn != null) {
-                    stopWatch.split("send return");
-                    mMethodReturns.remove(methodReturn);
+                    stopWatch = methodReturn.getStopWatch();
+                    stopWatch.split("call return");
+                    mMethodReturns.remove(id);
                 } else {
                     try {
                         stopWatch.split("send wait");
@@ -128,7 +127,6 @@ public class RemoteCallHandler implements CallHandler {
 
     private MethodReturn delegateCall(MethodCall methodCall) {
         MethodReturn methodReturn;
-
         RemoteObject remoteObject = methodCall.getRemoteObject();
         Object impl = mRemoteObjectImplMap.get(remoteObject);
         if (impl == null) {

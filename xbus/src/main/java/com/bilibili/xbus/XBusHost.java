@@ -350,12 +350,15 @@ public class XBusHost extends Thread {
                 mRouter.addConnection(this);
 
                 if (XBusLog.ENABLE) {
-                    XBusLog.d("Connection " + remotePath + " handshake success");
+                    XBusLog.d("connection " + remotePath + " handshake success");
                 }
 
                 Message msg;
                 while (mRunning.get()) {
                     msg = mIn.read();
+                    if (XBusLog.ENABLE) {
+                        XBusLog.d("connection read msg from " + remotePath + ", msg = " + (msg == null ? "null" : msg));
+                    }
                     if (msg == null) {
                         continue;
                     }
