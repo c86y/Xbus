@@ -90,8 +90,9 @@ public abstract class Message implements Serializable {
         return stopWatch;
     }
 
-    public void setStopWatch(StopWatch stopWatch) {
+    public Message setStopWatch(StopWatch stopWatch) {
         this.stopWatch = stopWatch;
+        return this;
     }
 
     @Override

@@ -1,16 +1,15 @@
 package com.bilibili.xbus.utils;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 
 /**
  * Watch Dog
  * Created by Kaede on 16/8/17.
  */
-public class StopWatch implements Serializable{
-    private static long startTime;
-    private static long splitTime;
-    private static long endTime;
+public class StopWatch implements Serializable {
+    private long startTime;
+    private long splitTime;
+    private long endTime;
     private StringBuilder stringBuilder;
 
     // {name → [tag1 = 100 ms] → [tag1 = 100 ms] ：all = 200 ms}
@@ -25,15 +24,16 @@ public class StopWatch implements Serializable{
         return this;
     }
 
-    public void split() {
-        split(" ");
+    public StopWatch split() {
+        return split(" ");
     }
 
-    public void split(String tag) {
+    public StopWatch split(String tag) {
         endTime = System.nanoTime();
         String interval = getInterval(splitTime, endTime);
         stringBuilder.append(String.format(" → [%s = %s ms]", tag, interval));
         splitTime = endTime;
+        return this;
     }
 
     public String end() {
@@ -43,13 +43,13 @@ public class StopWatch implements Serializable{
     public String end(String tag) {
         split(tag);
         endTime = System.nanoTime();
-        String interval =getInterval(startTime, endTime);
+        String interval = getInterval(startTime, endTime);
         stringBuilder.append(String.format(" ：all = %s ms}", interval));
         return stringBuilder.toString();
     }
 
     private String getInterval(long start, long end) {
         long l = end - start;
-        return String.valueOf(l/1000000f);
+        return String.valueOf(l / 1000000f);
     }
 }
