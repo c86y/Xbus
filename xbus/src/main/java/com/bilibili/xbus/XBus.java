@@ -30,14 +30,6 @@ public class XBus {
     private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
 
     static final int DEFAULT_SO_TIMEOUT = 0;
-    static final String PATH_UNKNOWN = "unknown";
-
-    public static final byte STATE_HANDSHAKE_INIT = 0;
-    public static final byte STATE_HANDSHAKE_WAIT = 1;
-    public static final byte STATE_HANDSHAKE_OK = 2;
-
-    private static final String METHOD_REQUEST_NAME = "requestName";
-    private static final String METHOD_ACCEPT = "accept";
 
     private MessageReader mIn;
     private MessageWriter mOut;
@@ -86,8 +78,10 @@ public class XBus {
     private class XBusBinder extends Thread {
 
         private int mTimeoutMillis;
+        private XBusHandshake handshake;
 
         private XBusBinder(int timeoutMillis) {
+            handshake = XBusHandshakeImpl.instance(mContext);
             mTimeoutMillis = timeoutMillis > 0 ? timeoutMillis : DEFAULT_CONNECT_TIMEOUT;
         }
 
@@ -106,7 +100,7 @@ public class XBus {
                 mOut = new MessageWriter(mPath, mSocket.getOutputStream());
                 mIn = new MessageReader(mPath, mSocket.getInputStream());
 
-                handshake(mIn, mOut);
+                handshake.handshakeWithHost(getPath(),mIn, mOut);
 
                 mConn = new Connection(mPath, mCallHandlerWrapper, mIn, mOut);
             } catch (IOException e) {
@@ -144,61 +138,6 @@ public class XBus {
                 }
             }
         }
-
-        private void handshake(MessageReader in, MessageWriter out) throws IOException {
-            Message msg;
-            byte state = STATE_HANDSHAKE_INIT;
-
-            while (state != STATE_HANDSHAKE_OK) {
-                switch (state) {
-                    case STATE_HANDSHAKE_INIT:
-                        msg = in.read();
-                        if (msg == null) {
-                            out.write(new MethodReturn(mPath, XBusUtils.getHostPath(mContext), -1, ErrorCode.E_READ_MSG));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (!XBusUtils.getHostPath(mContext).equals(msg.getSource())) {
-                            out.write(new MethodReturn(mPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_SOURCE));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (msg.getType() != Message.MessageType.METHOD_CALL) {
-                            out.write(new MethodReturn(mPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (!METHOD_REQUEST_NAME.equals(msg.getAction())) {
-                            out.write(new MethodReturn(mPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_ACTION));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        out.write(new MethodReturn(mPath, XBusUtils.getHostPath(mContext), msg.getSerial()).setReturnValue(getPath()));
-                        state = STATE_HANDSHAKE_WAIT;
-                        break;
-                    case STATE_HANDSHAKE_WAIT:
-                        msg = in.read();
-                        if (msg == null) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (!XBusUtils.getHostPath(mContext).equals(msg.getSource())) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (msg.getType() != Message.MessageType.METHOD_CALL) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (!METHOD_ACCEPT.equals(msg.getAction())) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        state = STATE_HANDSHAKE_OK;
-                        break;
-                }
-            }
-        }
     }
 
     private void close() {
@@ -206,7 +145,6 @@ public class XBus {
             mConn.disconnect();
             mConn = null;
         }
-
         XBusUtils.closeQuietly(mIn);
         XBusUtils.closeQuietly(mOut);
         XBusUtils.closeQuietly(mSocket);

@@ -12,10 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Pair;
 
-import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
-import com.bilibili.xbus.message.MethodCall;
-import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.MagicMap;
 import com.bilibili.xbus.utils.XBusLog;
 import com.bilibili.xbus.utils.XBusUtils;
@@ -41,6 +38,7 @@ public class XBusHost extends Thread {
     private Dispatcher mDispatcher;
     private final String mHostPath;
     private final XBusAuth mXBusAuth = new FastAuth();
+
 
     XBusHost(Context context) {
         super(TAG);
@@ -154,13 +152,13 @@ public class XBusHost extends Thread {
 
         void addConnection(Connection conn) {
             synchronized (mConns) {
-                mConns.put(conn.remotePath, conn);
+                mConns.put(conn.clientPath, conn);
             }
         }
 
         void removeConnection(Connection conn) {
             synchronized (mConns) {
-                mConns.remove(conn.remotePath);
+                mConns.remove(conn.clientPath);
             }
         }
 
@@ -249,21 +247,16 @@ public class XBusHost extends Thread {
 
         public static final String TAG = "Connection";
 
-        public static final byte STATE_HANDSHAKE_INIT = 0;
-        public static final byte STATE_HANDSHAKE_WAIT = 1;
-        public static final byte STATE_HANDSHAKE_OK = 2;
-
-        private static final String METHOD_REQUEST_NAME = "requestName";
-        private static final String METHOD_ACCEPT = "accept";
-
-        String remotePath;
+        String clientPath;
         LocalSocket socket;
         private MessageReader mIn;
         private MessageWriter mOut;
+        private final XBusHandshake handshake;
 
         public Connection(LocalSocket socket) {
             super(TAG);
             this.socket = socket;
+            handshake = XBusHandshakeImpl.instance(mContext);
             try {
                 this.mIn = new MessageReader(mHostPath, socket.getInputStream());
                 this.mOut = new MessageWriter(mHostPath, socket.getOutputStream());
@@ -302,62 +295,22 @@ public class XBusHost extends Thread {
             mRouter.removeConnection(this);
         }
 
-        public void handshake(MessageReader in, MessageWriter out) throws IOException {
-            Message msg;
-            byte state = STATE_HANDSHAKE_INIT;
-
-            while (state != STATE_HANDSHAKE_OK) {
-                switch (state) {
-                    case STATE_HANDSHAKE_INIT:
-                        out.write(new MethodCall(mHostPath, XBus.PATH_UNKNOWN, METHOD_REQUEST_NAME));
-                        state = STATE_HANDSHAKE_WAIT;
-                        break;
-                    case STATE_HANDSHAKE_WAIT:
-                        msg = in.read();
-                        if (msg == null) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        if (msg.getType() != Message.MessageType.METHOD_RETURN) {
-                            out.write(new MethodReturn(mHostPath, XBus.PATH_UNKNOWN, msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        MethodReturn methodReturn = (MethodReturn) msg;
-                        if (methodReturn.getErrorCode() != ErrorCode.SUCCESS) {
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        Object[] args = methodReturn.getArgs();
-                        if (args == null || args.length == 0) {
-                            out.write(new MethodReturn(mHostPath, XBus.PATH_UNKNOWN, methodReturn.getSerial(), ErrorCode.E_INVALID_MSG_ARGS));
-                            throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
-                        }
-
-                        remotePath = (String) args[0];
-                        out.write(new MethodCall(mHostPath, remotePath, METHOD_ACCEPT));
-                        state = STATE_HANDSHAKE_OK;
-                        break;
-                }
-            }
-        }
 
         @Override
         public void run() {
             try {
-                handshake(mIn, mOut);
-
+                clientPath = handshake.handshakeWithClient(mHostPath, mIn, mOut);
                 mRouter.addConnection(this);
 
                 if (XBusLog.ENABLE) {
-                    XBusLog.d("connection " + remotePath + " handshake success");
+                    XBusLog.d("connection " + clientPath + " handshake success");
                 }
 
                 Message msg;
                 while (mRunning.get()) {
                     msg = mIn.read();
                     if (XBusLog.ENABLE) {
-                        XBusLog.d("connection read msg from " + remotePath + ", msg = " + (msg == null ? "null" : msg));
+                        XBusLog.d("connection read msg from " + clientPath + ", msg = " + (msg == null ? "null" : msg));
                     }
                     if (msg == null) {
                         continue;
