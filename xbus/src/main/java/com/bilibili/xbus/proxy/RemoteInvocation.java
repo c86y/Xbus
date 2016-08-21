@@ -11,9 +11,9 @@ import java.lang.reflect.Proxy;
  */
 public class RemoteInvocation implements InvocationHandler {
 
-    private final RemoteCallHandler mRemoteCallHandler;
+    private final BaseRemoteCall mRemoteCallHandler;
 
-    private RemoteInvocation(RemoteCallHandler remoteCallHandler) {
+    private RemoteInvocation(BaseRemoteCall remoteCallHandler) {
         mRemoteCallHandler = remoteCallHandler;
     }
 

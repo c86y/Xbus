@@ -37,6 +37,10 @@ public class XBusHost extends Thread {
         XBusService.startService(context);
     }
 
+    public static void close(Context context) {
+        XBusService.stopService(context);
+    }
+
     private final String mHostPath;
     private final XBusAuth mXBusAuth;
 

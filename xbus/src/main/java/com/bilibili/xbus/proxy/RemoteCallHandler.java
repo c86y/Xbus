@@ -1,6 +1,5 @@
 package com.bilibili.xbus.proxy;
 
-import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBusException;
 import com.bilibili.xbus.message.ErrorCode;
@@ -22,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author chengyuan
  */
-public class RemoteCallHandler implements CallHandler {
+public class RemoteCallHandler extends BaseRemoteCall {
 
     private String mDest;
     private Connection mConn;
