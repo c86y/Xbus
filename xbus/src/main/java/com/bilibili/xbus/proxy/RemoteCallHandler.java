@@ -119,7 +119,7 @@ public class RemoteCallHandler implements CallHandler {
             throw new XBusException(methodReturn.getErrorCode(), methodReturn.getErrorMsg(), (Throwable) methodReturn.getReturnValue());
         }
 
-        XBusLog.d("invoke consumed : " + stopWatch.end("call end"));
+        XBusLog.i("invoke consumed : " + stopWatch.end("call end"));
         return methodReturn.getReturnValue();
     }
 

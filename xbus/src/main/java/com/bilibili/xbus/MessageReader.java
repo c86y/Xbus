@@ -46,7 +46,7 @@ public class MessageReader implements Closeable {
             msg = (Message) in.readUnshared();
 
             if (XBusLog.ENABLE) {
-                XBusLog.d(name + " read msg: " + msg);
+                XBusLog.i(name + " read msg: " + msg);
             }
         } catch (ClassNotFoundException e) {
             if (XBusLog.ENABLE) {

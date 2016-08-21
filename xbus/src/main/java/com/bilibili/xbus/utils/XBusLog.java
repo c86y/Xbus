@@ -1,5 +1,6 @@
 package com.bilibili.xbus.utils;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.bilibili.xbus.BuildConfig;
@@ -13,10 +14,21 @@ public class XBusLog {
 
     private static final String TAG = "XBus";
 
-    public static void d(String msg) {
+    public static void v(String msg) {
         if (!ENABLE) return;
-        if (msg == null) return;
+        if (TextUtils.isEmpty(msg)) return;
+        Log.v(TAG, msg);
+    }
 
+    public static void i(String msg) {
+        if (!ENABLE) return;
+        if (TextUtils.isEmpty(msg)) return;
+        Log.i(TAG, msg);
+    }
+
+    public static void w(String msg) {
+        if (!ENABLE) return;
+        if (TextUtils.isEmpty(msg)) return;
         Log.w(TAG, msg);
     }
 

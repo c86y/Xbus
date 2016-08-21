@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBus;
+import com.bilibili.xbus.XBusHost;
 import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        XBusService.startService(this);
+        XBusHost.init(this); // init XBusHost service
         startTestService();
 
         mRemoteCallHandler = new RemoteCallHandler("test");
