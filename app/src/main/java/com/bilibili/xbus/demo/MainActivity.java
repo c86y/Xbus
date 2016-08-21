@@ -47,8 +47,13 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
             btn1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    String echo = mTestInterface.talk("hello world");
-                    toast("Read msg: " + echo);
+                    mTestInterface.callBackTalk("hello", new TestInterface.CallBack() {
+                        @Override
+                        public void onGetMsg(String msg) {
+                            toast("Read msg: " + msg);
+                        }
+                    });
+
                 }
             });
         }
@@ -91,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        XBusHost.close(this);
+        // XBusHost.close(this);
     }
 
     @Override

@@ -34,6 +34,11 @@ public class MethodReturn extends Message {
         }
     }
 
+    public MethodReturn setAction(String action) {
+        this.headers.put(HeaderField.ACTION, action);
+        return this;
+    }
+
     public MethodReturn setReturnValue(Object... args) {
         this.args = args == null ? null : args;
         return this;

@@ -8,5 +8,5 @@ import java.lang.reflect.Method;
  * Created by Kaede on 16/8/21.
  */
 public abstract class BaseRemoteCall implements CallHandler {
-    abstract Object remoteInvoke(final Object proxy, final Method method, final Object[] args) throws Throwable;
+    public abstract Object remoteInvoke(final Object proxy, final Method method, final Object[] args) throws Throwable;
 }
