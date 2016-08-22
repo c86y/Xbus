@@ -20,6 +20,12 @@ public class XBusLog {
         Log.v(TAG, msg);
     }
 
+    public static void d(String msg) {
+        if (!ENABLE) return;
+        if (TextUtils.isEmpty(msg)) return;
+        Log.d(TAG, msg);
+    }
+
     public static void i(String msg) {
         if (!ENABLE) return;
         if (TextUtils.isEmpty(msg)) return;

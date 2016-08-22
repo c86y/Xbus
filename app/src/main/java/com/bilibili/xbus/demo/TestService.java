@@ -2,7 +2,6 @@ package com.bilibili.xbus.demo;
 
 import android.app.Service;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
@@ -22,7 +21,8 @@ public class TestService extends Service implements CallHandler{
 
     private XBus mBus;
     private RemoteCallHandler mRemoteCallHandler;
-    private TestInterface mTestInterface = new TestInterface() {
+
+    private TestEcho mTestEcho = new TestEcho() {
         @Override
         public String talk(String str) {
             return "echo " + str;
@@ -34,12 +34,20 @@ public class TestService extends Service implements CallHandler{
         }
     };
 
+    private TestGetUserInfo mTestGetUser = new TestGetUserInfo() {
+        @Override
+        public User getUser() {
+            return new User("kaede", 10086);
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
         mRemoteCallHandler = new RemoteCallHandler("main");
         mBus = new XBus(this, "test", this).registerCallHandler(mRemoteCallHandler);
-        mRemoteCallHandler.registerObject(TestInterface.class, mTestInterface);
+        mRemoteCallHandler.registerObject(TestEcho.class, mTestEcho);
+        mRemoteCallHandler.registerObject(TestGetUserInfo.class, mTestGetUser);
 
         mBus.connect();
     }

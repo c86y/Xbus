@@ -8,7 +8,7 @@ import com.bilibili.xbus.annotation.CallBackAction;
  * @author chengyuan
  * @data 16/8/16.
  */
-public interface TestInterface {
+public interface TestEcho {
 
     interface CallBack {
         String METHOD_TALK = "talk";

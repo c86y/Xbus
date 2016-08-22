@@ -22,10 +22,9 @@ import com.bilibili.xbus.proxy.RemoteInvocation;
 public class MainActivity extends AppCompatActivity implements CallHandler {
 
     private XBus mBus;
-    private Button btn1;
-    private Button btn2;
     private RemoteCallHandler mRemoteCallHandler;
-    private TestInterface mTestInterface;
+    private TestEcho mTestEcho;
+    private TestGetUserInfo mTestGetUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,26 +38,38 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
 
         mRemoteCallHandler = new RemoteCallHandler("test");
         mBus = new XBus(this, "main", this).registerCallHandler(mRemoteCallHandler);
-        mTestInterface = RemoteInvocation.getProxy(TestInterface.class, mRemoteCallHandler);
 
-        btn1 = (Button) findViewById(R.id.btn1);
+        mTestEcho = RemoteInvocation.getProxy(TestEcho.class, mRemoteCallHandler);
+        mTestGetUser = RemoteInvocation.getProxy(TestGetUserInfo.class, mRemoteCallHandler);
+
+        Button btn1 = (Button) findViewById(R.id.btn1);
         if (btn1 != null) {
             btn1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    String msg = mTestInterface.talk("hello");
+                    String msg = mTestEcho.talk("hello");
                     toast("return : " + String.valueOf(msg));
                 }
             });
         }
 
-        btn2 = (Button) findViewById(R.id.btn2);
+        Button btn2 = (Button) findViewById(R.id.btn2);
         if (btn2 != null) {
             btn2.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    mTestInterface.callBackTalk("hello");
+                    mTestEcho.callBackTalk("hello");
 
+                }
+            });
+        }
+
+        Button btn3 = (Button) findViewById(R.id.btn3);
+        if (btn3 != null) {
+            btn3.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mTestGetUser.getUser();
                 }
             });
         }
@@ -67,7 +78,10 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
             @Override
             public void callBack(String action, Object object) {
                 switch (action) {
-                    case TestInterface.CallBack.METHOD_TALK:
+                    case TestEcho.CallBack.METHOD_TALK:
+                        toast("return : " + String.valueOf(object));
+                        break;
+                    case TestGetUserInfo.CallBack.METHOD_GET_USER:
                         toast("return : " + String.valueOf(object));
                         break;
                     default:

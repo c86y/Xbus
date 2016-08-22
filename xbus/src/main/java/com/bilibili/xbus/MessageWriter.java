@@ -42,7 +42,7 @@ public class MessageWriter implements Closeable {
         }
 
         if (XBusLog.ENABLE) {
-            XBusLog.i(name + " write msg: " + msg);
+            XBusLog.d(name + " write msg: " + msg);
         }
 
         out.writeUnshared(msg);

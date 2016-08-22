@@ -107,7 +107,7 @@ public class RemoteCallHandler extends BaseRemoteCall {
                     @Override
                     public void run() {
                         StopWatch stopWatch = methodReturn.getStopWatch();
-                        XBusLog.i("invoke consumed : " + stopWatch.end("call back end"));
+                        XBusLog.d("invoke consumed = " + stopWatch.end("call back end"));
                         callBack.callBack(methodReturn.getCallBackAction(), methodReturn.getReturnValue());
                     }
                 });
@@ -167,12 +167,13 @@ public class RemoteCallHandler extends BaseRemoteCall {
             }
         } while (methodReturn == null && mConn != null);
 
+        Object returnValue = methodReturn.getReturnValue();
         if (methodReturn.getErrorCode() != ErrorCode.SUCCESS) {
-            throw new XBusException(methodReturn.getErrorCode(), methodReturn.getErrorMsg(), (Throwable) methodReturn.getReturnValue());
+            throw new XBusException(methodReturn.getErrorCode(), methodReturn.getErrorMsg(), (Throwable) returnValue);
         }
-
-        XBusLog.i("invoke consumed : " + stopWatch.end("call end"));
-        return methodReturn.getReturnValue();
+        XBusLog.d("invoke consumed = " + stopWatch.end("call end"));
+        XBusLog.d("invoke result = " + String.valueOf(returnValue));
+        return returnValue;
     }
 
     private MethodReturn delegateCall(MethodCall methodCall) {

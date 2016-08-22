@@ -61,7 +61,7 @@ public class XBusHost extends Thread {
 
     void stopRunning() {
         if (XBusLog.ENABLE) {
-            XBusLog.i("XBusHost is stopped");
+            XBusLog.d("XBusHost is stopped");
         }
         mRunning.set(false);
     }
@@ -84,7 +84,7 @@ public class XBusHost extends Thread {
         try {
             lss = new LocalServerSocket(XBusUtils.getHostAddress(mContext));
             if (XBusLog.ENABLE) {
-                XBusLog.i("XBus Host is running");
+                XBusLog.d("XBus Host is running");
             }
 
             while (mRunning.get()) {
@@ -92,7 +92,7 @@ public class XBusHost extends Thread {
                 ls.setSoTimeout(XBus.DEFAULT_SO_TIMEOUT);
 
                 if (XBusLog.ENABLE) {
-                    XBusLog.i("accept socket: " + ls);
+                    XBusLog.d("accept socket: " + ls);
                 }
 
                 XBusAuth.AuthResult result = mXBusAuth.auth(XBusAuth.MODE_SERVER, ls);
@@ -316,14 +316,14 @@ public class XBusHost extends Thread {
                 mRouter.addConnection(this);
 
                 if (XBusLog.ENABLE) {
-                    XBusLog.i("connection " + clientPath + " handshake success");
+                    XBusLog.d("connection " + clientPath + " handshake success");
                 }
 
                 Message msg;
                 while (mRunning.get()) {
                     msg = mIn.read();
                     if (XBusLog.ENABLE) {
-                        XBusLog.i("connection read msg from " + clientPath + ", msg = " + (msg == null ? "null" : msg));
+                        XBusLog.d("connection read msg from " + clientPath + ", msg = " + (msg == null ? "null" : msg));
                     }
                     if (msg == null) {
                         continue;
