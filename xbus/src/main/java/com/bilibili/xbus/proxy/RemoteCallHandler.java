@@ -72,7 +72,7 @@ public class RemoteCallHandler extends BaseRemoteCall {
             String callBackAction = methodReturn.getCallBackAction();
             if (TextUtils.isEmpty(callBackAction)) {
                 synchronized (mMethodReturns) {
-                    msg.getStopWatch().split("syn in-list");
+                    methodReturn.getStopWatch().split("syn in-list");
                     mMethodReturns.put(methodReturn.getSerial(), methodReturn);
                     mMethodReturns.notifyAll();
                 }
@@ -106,6 +106,8 @@ public class RemoteCallHandler extends BaseRemoteCall {
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
+                        StopWatch stopWatch = methodReturn.getStopWatch();
+                        XBusLog.i("invoke consumed : " + stopWatch.end("call back end"));
                         callBack.callBack(methodReturn.getCallBackAction(), methodReturn.getReturnValue());
                     }
                 });
@@ -144,6 +146,7 @@ public class RemoteCallHandler extends BaseRemoteCall {
 
         conn.send(methodCall);
         if (!needReturn) {
+            stopWatch.split("call end");
             return null;
         }
         MethodReturn methodReturn = null;
