@@ -1,6 +1,6 @@
 package com.bilibili.xbus.demo;
 
-import java.io.Serializable;
+import com.bilibili.xbus.annotation.CallBackAction;
 
 /**
  * TestInterface
@@ -10,11 +10,12 @@ import java.io.Serializable;
  */
 public interface TestInterface {
 
-    interface CallBack extends Serializable {
-        void onGetMsg(String msg);
+    interface CallBack {
+        String METHOD_TALK = "talk";
     }
 
     String talk(String str);
 
-    String callBackTalk(String str, CallBack callBack);
+    @CallBackAction(CallBack.METHOD_TALK)
+    String callBackTalk(String str);
 }

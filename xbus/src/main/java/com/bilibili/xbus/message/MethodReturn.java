@@ -34,9 +34,13 @@ public class MethodReturn extends Message {
         }
     }
 
-    public MethodReturn setAction(String action) {
-        this.headers.put(HeaderField.ACTION, action);
+    public MethodReturn setCallBackAction(String action) {
+        this.headers.put(HeaderField.ACTION_CALLBACK, action);
         return this;
+    }
+
+    public String getCallBackAction() {
+        return (String) headers.get(HeaderField.ACTION_CALLBACK);
     }
 
     public MethodReturn setReturnValue(Object... args) {

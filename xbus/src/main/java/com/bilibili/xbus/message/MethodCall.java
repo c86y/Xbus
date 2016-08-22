@@ -29,4 +29,13 @@ public class MethodCall extends Message {
             this.headers.put(HeaderField.REMOTE_OBJECT, remoteObject);
         }
     }
+
+    public MethodCall setCallBackAction(String action) {
+        this.headers.put(HeaderField.ACTION_CALLBACK, action);
+        return this;
+    }
+
+    public String getCallBackAction() {
+        return (String) headers.get(HeaderField.ACTION_CALLBACK);
+    }
 }

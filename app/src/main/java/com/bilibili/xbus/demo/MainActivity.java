@@ -2,7 +2,6 @@ package com.bilibili.xbus.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -16,7 +15,6 @@ import com.bilibili.xbus.CallHandler;
 import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBus;
 import com.bilibili.xbus.XBusHost;
-import com.bilibili.xbus.XBusService;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
 import com.bilibili.xbus.proxy.RemoteInvocation;
@@ -25,6 +23,7 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
 
     private XBus mBus;
     private Button btn1;
+    private Button btn2;
     private RemoteCallHandler mRemoteCallHandler;
     private TestInterface mTestInterface;
 
@@ -47,16 +46,35 @@ public class MainActivity extends AppCompatActivity implements CallHandler {
             btn1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    mTestInterface.callBackTalk("hello", new TestInterface.CallBack() {
-                        @Override
-                        public void onGetMsg(String msg) {
-                            toast("Read msg: " + msg);
-                        }
-                    });
+                    String msg = mTestInterface.talk("hello");
+                    toast("return : " + String.valueOf(msg));
+                }
+            });
+        }
+
+        btn2 = (Button) findViewById(R.id.btn2);
+        if (btn2 != null) {
+            btn2.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mTestInterface.callBackTalk("hello");
 
                 }
             });
         }
+
+        mRemoteCallHandler.registerRemoteCallBack(new RemoteCallHandler.RemoteCallBack() {
+            @Override
+            public void callBack(String action, Object object) {
+                switch (action) {
+                    case TestInterface.CallBack.METHOD_TALK:
+                        toast("return : " + String.valueOf(object));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
 
         mBus.connect();
     }

@@ -29,7 +29,7 @@ public class TestService extends Service implements CallHandler{
         }
 
         @Override
-        public String callBackTalk(String str, CallBack callBack) {
+        public String callBackTalk(String str) {
             return "echo " + str;
         }
     };

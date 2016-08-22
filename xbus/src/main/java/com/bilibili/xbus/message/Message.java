@@ -33,6 +33,7 @@ public abstract class Message implements Serializable {
         byte REPLY_SERIAL = 5;
         byte ERROR_CODE = 6;
         byte ERROR_MSG = 7;
+        byte ACTION_CALLBACK = 8;
     }
 
     protected final long serial;

@@ -2,9 +2,11 @@ package com.bilibili.xbus.proxy;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 
 import com.bilibili.xbus.Connection;
 import com.bilibili.xbus.XBusException;
+import com.bilibili.xbus.annotation.CallBackAction;
 import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
 import com.bilibili.xbus.message.MethodCall;
@@ -12,9 +14,12 @@ import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.StopWatch;
 import com.bilibili.xbus.utils.XBusLog;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +35,7 @@ public class RemoteCallHandler extends BaseRemoteCall {
     private Connection mConn;
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private final Map<Long, MethodReturn> mMethodReturns = new HashMap<>();
-    private final Map<Long, Object> mCallBacks = new HashMap<>();
+    private final List<WeakReference<RemoteCallBack>> mRemoteCallBacks = new LinkedList<>();
     private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectProxyMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<RemoteObject, Object> mRemoteObjectImplMap = new ConcurrentHashMap<>();
 
@@ -63,36 +68,17 @@ public class RemoteCallHandler extends BaseRemoteCall {
             // receive invoke result from remote
             msg.getStopWatch().split("receive call result");
 
-            final Object callBack = mCallBacks.get(msg.getSerial());
-            if (callBack != null) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Method[] methods = callBack.getClass().getMethods();
-                        for (int i = 0; i < methods.length; i++) {
-                            Method item = methods[i];
-                            // TODO: 16/8/22 deal with callback method name 
-                            if (item.getName().equals("onGetMsg")) {
-                                try {
-                                    item.invoke(callBack, ((MethodReturn) msg).getReturnValue());
-                                } catch (IllegalAccessException e) {
-                                    e.printStackTrace();
-                                } catch (InvocationTargetException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-
-                    }
-                });
-                mCallBacks.remove(callBack);
+            MethodReturn methodReturn = ((MethodReturn) msg);
+            String callBackAction = methodReturn.getCallBackAction();
+            if (TextUtils.isEmpty(callBackAction)) {
+                synchronized (mMethodReturns) {
+                    msg.getStopWatch().split("syn in-list");
+                    mMethodReturns.put(methodReturn.getSerial(), methodReturn);
+                    mMethodReturns.notifyAll();
+                }
+                return;
             }
-
-            synchronized (mMethodReturns) {
-                msg.getStopWatch().split("syn in-list");
-                mMethodReturns.put(msg.getSerial(), (MethodReturn) msg);
-                mMethodReturns.notifyAll();
-            }
+            remoteCallBack(methodReturn);
         }
     }
 
@@ -106,50 +92,60 @@ public class RemoteCallHandler extends BaseRemoteCall {
         mRemoteObjectImplMap.put(remoteObject, impl);
     }
 
+    public void registerRemoteCallBack(RemoteCallBack callBack) {
+        if (callBack == null) return;
+        WeakReference<RemoteCallBack> weak = new WeakReference<>(callBack);
+        mRemoteCallBacks.add(weak);
+    }
+
+    private void remoteCallBack(final MethodReturn methodReturn) {
+        for (int i = 0; i < mRemoteCallBacks.size(); i++) {
+            WeakReference<RemoteCallBack> item = mRemoteCallBacks.get(i);
+            final RemoteCallBack callBack = item.get();
+            if (callBack != null) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callBack.callBack(methodReturn.getCallBackAction(), methodReturn.getReturnValue());
+                    }
+                });
+            }
+        }
+    }
+
     public final synchronized Object remoteInvoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
         Connection conn = mConn;
         if (conn == null) {
             throw new XBusException("Connection is disconnected");
         }
 
-        boolean isNeedReturn = true;
-        Object callBack = null;
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        for (int i = 0; i < parameterTypes.length; i++) {
-            Class<?> item = parameterTypes[i];
-            if (item.isInterface()) {
-                callBack = args[i];
-                args[i] = null;
-                break;
-            }
-        }
-
         RemoteObject remoteObject = getRemoteObjectFromProxy(proxy);
         if (remoteObject == null) {
+            // TODO: 16/8/22  better way to get target interface
             remoteObject = new RemoteObject(proxy.getClass().getInterfaces()[0].getName());
         }
 
         String action = method.getName();
         MethodCall methodCall = new MethodCall(conn.getPath(), mDest, action, remoteObject, args);
         long id = methodCall.getSerial();
-        if (callBack != null) {
-            mCallBacks.put(id, callBack);
-        }
 
-        if (method.getReturnType() == Void.class || callBack != null) {
-            isNeedReturn = false;
+        boolean needReturn = true;
+        CallBackAction annotation = method.getAnnotation(CallBackAction.class);
+        if (annotation != null) {
+            String callBackAction = annotation.value();
+            if (!TextUtils.isEmpty(callBackAction)) {
+                needReturn = false;
+                methodCall.setCallBackAction(callBackAction);
+            }
         }
-
         // TODO: 16/8/18  deal with stop watch for better performance
         StopWatch stopWatch = new StopWatch().start(method.getName() + " " + id).split("create call");
         methodCall.setStopWatch(stopWatch);
 
         conn.send(methodCall);
-
-        if (!isNeedReturn) {
+        if (!needReturn) {
             return null;
         }
-
         MethodReturn methodReturn = null;
         do {
             synchronized (mMethodReturns) {
@@ -207,7 +203,7 @@ public class RemoteCallHandler extends BaseRemoteCall {
             methodImpl.setAccessible(true);
             returnObject = methodImpl.invoke(impl, methodCall.getArgs());
             methodReturn = new MethodReturn(methodCall.getDest(), methodCall.getSource(), methodCall.getSerial()).setReturnValue(returnObject);
-            methodReturn.setAction(methodCall.getAction());
+            methodReturn.setCallBackAction(methodCall.getCallBackAction());
         } catch (IllegalAccessException e) {
             if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
@@ -246,5 +242,9 @@ public class RemoteCallHandler extends BaseRemoteCall {
         }
 
         return null;
+    }
+
+    public interface RemoteCallBack {
+        void callBack(String action, Object object);
     }
 }
