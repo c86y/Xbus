@@ -43,7 +43,7 @@ public class XBusHost extends Thread {
         XBusService.stopService(context);
     }
 
-    private final String mHostPath;
+    private final String mHostAddress;
     private final XBusAuth mXBusAuth;
 
     private Context mContext;
@@ -54,7 +54,7 @@ public class XBusHost extends Thread {
     XBusHost(Context context) {
         super(TAG);
         mContext = context.getApplicationContext();
-        mHostPath = XBusUtils.getHostPath(mContext);
+        mHostAddress = XBusUtils.getHostAddress(mContext);
         mXBusAuth = new FastAuth();
         mRouter = new XBusRouter();
         mDispatcher = new Dispatcher();
@@ -84,7 +84,7 @@ public class XBusHost extends Thread {
 
         LocalServerSocket lss = null;
         try {
-            lss = new LocalServerSocket(XBusUtils.getHostAddress(mContext));
+            lss = new LocalServerSocket(mHostAddress);
             if (XBusLog.ENABLE) {
                 XBusLog.d("XBus Host is running");
             }
@@ -273,8 +273,8 @@ public class XBusHost extends Thread {
             this.socket = socket;
             handshake = XBusHandshakeImpl.instance(mContext);
             try {
-                this.mIn = new MessageReader(mHostPath, socket.getInputStream());
-                this.mOut = new MessageWriter(mHostPath, socket.getOutputStream());
+                this.mIn = new MessageReader(mHostAddress, socket.getInputStream());
+                this.mOut = new MessageWriter(mHostAddress, socket.getOutputStream());
             } catch (IOException e) {
                 if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);
@@ -314,7 +314,7 @@ public class XBusHost extends Thread {
         @Override
         public void run() {
             try {
-                clientPath = handshake.handshakeWithClient(mHostPath, mIn, mOut);
+                clientPath = handshake.handshakeWithClient(mHostAddress, mIn, mOut);
                 mRouter.addConnection(this);
 
                 if (XBusLog.ENABLE) {

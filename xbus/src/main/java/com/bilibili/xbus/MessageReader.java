@@ -20,13 +20,13 @@ import java.io.ObjectInputStream;
  */
 public class MessageReader implements Closeable {
 
-    private String name;
-    private ObjectInputStream in;
+    private String mAddress;
+    private ObjectInputStream mIn;
 
-    public MessageReader(String name, InputStream in) {
+    public MessageReader(String address, InputStream in) {
         try {
-            this.name = name;
-            this.in = new ObjectInputStream(in);
+            this.mAddress = address;
+            this.mIn = new ObjectInputStream(in);
         } catch (IOException e) {
             if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
@@ -37,16 +37,16 @@ public class MessageReader implements Closeable {
     }
 
     public Message read() throws IOException {
-        if (in == null) {
+        if (mIn == null) {
             throw new XBusException("Input stream is closed!");
         }
 
         Message msg = null;
         try {
-            msg = (Message) in.readUnshared();
+            msg = (Message) mIn.readUnshared();
 
             if (XBusLog.ENABLE) {
-                XBusLog.d(name + " read msg: " + msg);
+                XBusLog.d(mAddress + " read msg: " + msg);
             }
         } catch (ClassNotFoundException e) {
             if (XBusLog.ENABLE) {
@@ -58,8 +58,8 @@ public class MessageReader implements Closeable {
 
     @Override
     public void close() throws IOException {
-        in.close();
-        in = null;
+        mIn.close();
+        mIn = null;
     }
 
 }

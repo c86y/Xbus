@@ -9,9 +9,6 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.os.Debug;
 
-import com.bilibili.xbus.message.ErrorCode;
-import com.bilibili.xbus.message.Message;
-import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.proxy.RemoteCallHandler;
 import com.bilibili.xbus.utils.XBusLog;
 import com.bilibili.xbus.utils.XBusUtils;
@@ -38,17 +35,17 @@ public class XBus {
     private Connection mConn;
 
     private final XBusAuth mAuth = new FastAuth();
-    private final String mPath;
+    private final String mAddress;
     private final CallHandlerWrapper mCallHandlerWrapper;
 
-    public XBus(Context context, String path, CallHandler callHandler) {
+    public XBus(Context context, String address, CallHandler callHandler) {
         mContext = context.getApplicationContext();
-        mPath = path;
+        mAddress = address;
         mCallHandlerWrapper = new CallHandlerWrapper(callHandler);
     }
 
-    public String getPath() {
-        return mPath;
+    public String getAddress() {
+        return mAddress;
     }
 
     public XBus registerCallHandler(RemoteCallHandler callHandler) {
@@ -88,6 +85,7 @@ public class XBus {
         @Override
         public void run() {
             try {
+                mSocket.bind(new LocalSocketAddress(mAddress, LocalSocketAddress.Namespace.ABSTRACT));
                 tryConnect(mSocket, mTimeoutMillis);
 
                 mSocket.setSoTimeout(DEFAULT_SO_TIMEOUT);
@@ -97,12 +95,12 @@ public class XBus {
                     throw new XBusException("Failed to auth");
                 }
 
-                mOut = new MessageWriter(mPath, mSocket.getOutputStream());
-                mIn = new MessageReader(mPath, mSocket.getInputStream());
+                mOut = new MessageWriter(mAddress, mSocket.getOutputStream());
+                mIn = new MessageReader(mAddress, mSocket.getInputStream());
 
-                handshake.handshakeWithHost(getPath(),mIn, mOut);
+                handshake.handshakeWithHost(mAddress, mIn, mOut);
 
-                mConn = new Connection(mPath, mCallHandlerWrapper, mIn, mOut);
+                mConn = new Connection(mAddress, mCallHandlerWrapper, mIn, mOut);
             } catch (IOException e) {
                 if (XBusLog.ENABLE) {
                     XBusLog.printStackTrace(e);

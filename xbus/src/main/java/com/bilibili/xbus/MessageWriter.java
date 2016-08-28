@@ -20,13 +20,13 @@ import java.io.OutputStream;
  */
 public class MessageWriter implements Closeable {
 
-    private String name;
-    private ObjectOutputStream out;
+    private String mAddress;
+    private ObjectOutputStream mOut;
 
-    public MessageWriter(String name, OutputStream out) {
+    public MessageWriter(String address, OutputStream out) {
         try {
-            this.name = name;
-            this.out = new ObjectOutputStream(out);
+            this.mAddress = address;
+            this.mOut = new ObjectOutputStream(out);
         } catch (IOException e) {
             if (XBusLog.ENABLE) {
                 XBusLog.printStackTrace(e);
@@ -37,21 +37,21 @@ public class MessageWriter implements Closeable {
     }
 
     public void write(Message msg) throws IOException {
-        if (out == null) {
+        if (mOut == null) {
             throw new XBusException("Output stream is closed!");
         }
 
         if (XBusLog.ENABLE) {
-            XBusLog.d(name + " write msg: " + msg);
+            XBusLog.d(mAddress + " write msg: " + msg);
         }
 
-        out.writeUnshared(msg);
-        out.flush();
+        mOut.writeUnshared(msg);
+        mOut.flush();
     }
 
     @Override
     public void close() throws IOException {
-        out.close();
-        out = null;
+        mOut.close();
+        mOut = null;
     }
 }

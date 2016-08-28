@@ -41,7 +41,7 @@ public class XBusHandshakeImpl implements XBusHandshake {
     }
 
     @Override
-    public void handshakeWithHost(String clientPath, MessageReader in, MessageWriter out) throws IOException {
+    public void handshakeWithHost(String clientAddress, MessageReader in, MessageWriter out) throws IOException {
         Message msg;
         byte state = STATE_HANDSHAKE_INIT;
 
@@ -50,26 +50,26 @@ public class XBusHandshakeImpl implements XBusHandshake {
                 case STATE_HANDSHAKE_INIT:
                     msg = in.read();
                     if (msg == null) {
-                        out.write(new MethodReturn(clientPath, XBusUtils.getHostPath(mContext), -1, ErrorCode.E_READ_MSG));
+                        out.write(new MethodReturn(clientAddress, XBusUtils.getHostAddress(mContext), -1, ErrorCode.E_READ_MSG));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
-                    if (!XBusUtils.getHostPath(mContext).equals(msg.getSource())) {
-                        out.write(new MethodReturn(clientPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_SOURCE));
+                    if (!XBusUtils.getHostAddress(mContext).equals(msg.getSource())) {
+                        out.write(new MethodReturn(clientAddress, XBusUtils.getHostAddress(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_SOURCE));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (msg.getType() != Message.MessageType.METHOD_CALL) {
-                        out.write(new MethodReturn(clientPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
+                        out.write(new MethodReturn(clientAddress, XBusUtils.getHostAddress(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     if (!METHOD_REQUEST_NAME.equals(msg.getAction())) {
-                        out.write(new MethodReturn(clientPath, XBusUtils.getHostPath(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_ACTION));
+                        out.write(new MethodReturn(clientAddress, XBusUtils.getHostAddress(mContext), msg.getSerial(), ErrorCode.E_INVALID_MSG_ACTION));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
-                    out.write(new MethodReturn(clientPath, XBusUtils.getHostPath(mContext), msg.getSerial()).setReturnValue(clientPath));
+                    out.write(new MethodReturn(clientAddress, XBusUtils.getHostAddress(mContext), msg.getSerial()).setReturnValue(clientAddress));
                     state = STATE_HANDSHAKE_WAIT;
                     break;
                 case STATE_HANDSHAKE_WAIT:
@@ -78,7 +78,7 @@ public class XBusHandshakeImpl implements XBusHandshake {
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
-                    if (!XBusUtils.getHostPath(mContext).equals(msg.getSource())) {
+                    if (!XBusUtils.getHostAddress(mContext).equals(msg.getSource())) {
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
@@ -97,14 +97,14 @@ public class XBusHandshakeImpl implements XBusHandshake {
     }
 
     @Override
-    public String handshakeWithClient(String hostPath, MessageReader in, MessageWriter out) throws IOException {
+    public String handshakeWithClient(String hostAddress, MessageReader in, MessageWriter out) throws IOException {
         Message msg;
         String remotePath = null;
         byte state = STATE_HANDSHAKE_INIT;
         while (state != STATE_HANDSHAKE_OK) {
             switch (state) {
                 case STATE_HANDSHAKE_INIT:
-                    out.write(new MethodCall(hostPath, PATH_UNKNOWN, METHOD_REQUEST_NAME));
+                    out.write(new MethodCall(hostAddress, PATH_UNKNOWN, METHOD_REQUEST_NAME));
                     state = STATE_HANDSHAKE_WAIT;
                     break;
                 case STATE_HANDSHAKE_WAIT:
@@ -114,7 +114,7 @@ public class XBusHandshakeImpl implements XBusHandshake {
                     }
 
                     if (msg.getType() != Message.MessageType.METHOD_RETURN) {
-                        out.write(new MethodReturn(hostPath, PATH_UNKNOWN, msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
+                        out.write(new MethodReturn(hostAddress, PATH_UNKNOWN, msg.getSerial(), ErrorCode.E_INVALID_MSG_TYPE));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
@@ -125,12 +125,12 @@ public class XBusHandshakeImpl implements XBusHandshake {
 
                     Object[] args = methodReturn.getArgs();
                     if (args == null || args.length == 0) {
-                        out.write(new MethodReturn(hostPath, PATH_UNKNOWN, methodReturn.getSerial(), ErrorCode.E_INVALID_MSG_ARGS));
+                        out.write(new MethodReturn(hostAddress, PATH_UNKNOWN, methodReturn.getSerial(), ErrorCode.E_INVALID_MSG_ARGS));
                         throw new XBusException("handshake failed when state = " + state + " msg = " + msg);
                     }
 
                     remotePath = (String) args[0];
-                    out.write(new MethodCall(hostPath, remotePath, METHOD_ACCEPT));
+                    out.write(new MethodCall(hostAddress, remotePath, METHOD_ACCEPT));
                     state = STATE_HANDSHAKE_OK;
                     break;
             }

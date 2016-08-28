@@ -32,10 +32,6 @@ public class XBusUtils {
         }
     }
 
-    public static String getHostPath(Context context) {
-        return getHostAddress(context);
-    }
-
     public static String getHostAddress(Context context) {
         return context.getPackageName() + HOST_SOCKET_NAME;
     }
