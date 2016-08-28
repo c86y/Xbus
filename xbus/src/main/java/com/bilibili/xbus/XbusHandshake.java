@@ -7,7 +7,7 @@ import java.io.IOException;
  * @version date 16/8/19
  */
 public interface XBusHandshake {
-    void handshakeWithHost(String clientPath, MessageReader in, MessageWriter out) throws IOException;
+    void handshakeWithHost(String clientAddress, MessageReader in, MessageWriter out) throws IOException;
 
-    String handshakeWithClient(String hostPath, MessageReader in, MessageWriter out) throws IOException;
+    String handshakeWithClient(String hostAddress, MessageReader in, MessageWriter out) throws IOException;
 }
