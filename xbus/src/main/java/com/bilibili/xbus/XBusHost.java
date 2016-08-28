@@ -12,7 +12,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Pair;
 
+import com.bilibili.xbus.message.ErrorCode;
 import com.bilibili.xbus.message.Message;
+import com.bilibili.xbus.message.MethodReturn;
 import com.bilibili.xbus.utils.MagicMap;
 import com.bilibili.xbus.utils.XBusLog;
 import com.bilibili.xbus.utils.XBusUtils;
@@ -331,6 +333,14 @@ public class XBusHost extends Thread {
 
                     String dest = msg.getDest();
                     HostConnection conn = mRouter.mConns.get(dest);
+                    if (conn == null) {
+                        mOut.write(new MethodReturn(msg.getDest(), msg.getSource(), msg.getSerial(), ErrorCode.E_INVALID_ADDRESS));
+                        if (XBusLog.ENABLE) {
+                            XBusLog.d("connection read msg " + msg + " target address is invalid");
+                        }
+                        continue;
+                    }
+
                     mRouter.offerIn(msg, conn);
                 }
             } catch (IOException e) {

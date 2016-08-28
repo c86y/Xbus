@@ -19,4 +19,5 @@ public interface ErrorCode {
     int E_INVOKE_TARGET = 3002;
     int E_CLASS_NOT_FOUND = 3003;
     int E_NO_SUCH_METHOD = 3004;
+    int E_INVALID_ADDRESS = 3005;
 }

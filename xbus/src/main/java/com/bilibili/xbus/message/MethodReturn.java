@@ -3,20 +3,45 @@ package com.bilibili.xbus.message;
 import android.support.annotation.NonNull;
 
 /**
+ * 回调消息
  * MethodReturn
  *
  * @author chengyuan
  */
 public class MethodReturn extends Message {
 
+    /**
+     * 构造正常回调消息
+     *
+     * @param source      原地址
+     * @param dest        目的地址
+     * @param replySerial 对应的调用消息ID
+     */
     public MethodReturn(@NonNull String source, @NonNull String dest, long replySerial) {
         this(source, dest, replySerial, ErrorCode.SUCCESS, null);
     }
 
+    /**
+     * 构造异常回调消息
+     *
+     * @param source      原地址
+     * @param dest        目的地址
+     * @param replySerial 对应的调用消息ID
+     * @param errorCode   错误码
+     */
     public MethodReturn(@NonNull String source, @NonNull String dest, long replySerial, int errorCode) {
         this(source, dest, replySerial, errorCode, null);
     }
 
+    /**
+     * 构造异常回调消息
+     *
+     * @param source      原地址
+     * @param dest        目的地址
+     * @param replySerial 对应的调用消息ID
+     * @param errorCode   错误码
+     * @param errorMsg    错误描述信息
+     */
     public MethodReturn(@NonNull String source, @NonNull String dest, long replySerial, int errorCode, String errorMsg) {
         super(MessageType.METHOD_RETURN);
 
