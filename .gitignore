@@ -6,6 +6,9 @@
 .DS_Store
 /build
 /captures
+/freeline
+/freeline_core
+freeline.py
 .idea/.name
 .idea/compiler.xml
 .idea/misc.xml
